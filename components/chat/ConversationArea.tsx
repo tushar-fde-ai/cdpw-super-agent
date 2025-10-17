@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, Sparkles, Ghost } from 'lucide-react';
 import { Message } from './messages/types';
@@ -152,7 +152,7 @@ export default function ConversationArea({
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            Hello! I'm your Marketing Super Agent
+            Hello! I&apos;m your Marketing Super Agent
           </motion.h2>
 
           <motion.p

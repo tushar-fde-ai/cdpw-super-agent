@@ -16,7 +16,7 @@ import { DemoFlow, DemoFlowPlayer } from '@/lib/demo-flows';
 interface DemoFlowPlayerProps {
   flow: DemoFlow;
   autoPlay?: boolean;
-  onStateChange?: (state: any) => void;
+  onStateChange?: (state: { type: string; data: { content?: string; metadata?: unknown } }) => void;
   onExit?: () => void;
 }
 
@@ -43,7 +43,7 @@ export default function DemoFlowPlayerComponent({
   // Initialize player with flow
   useEffect(() => {
     if (flow) {
-      player.loadFlow(flow.id as any);
+      player.loadFlow(flow.id as 'campaign-brief' | 'campaign-execution');
       if (autoPlay) {
         player.play();
       }
@@ -218,7 +218,7 @@ export default function DemoFlowPlayerComponent({
                 {flow.steps[currentStepIndex].action.replace('-', ' ')}
                 {flow.steps[currentStepIndex].content && (
                   <span className="ml-2 italic">
-                    "{flow.steps[currentStepIndex].content?.substring(0, 50)}..."
+                    &quot;{flow.steps[currentStepIndex].content?.substring(0, 50)}...&quot;
                   </span>
                 )}
               </div>

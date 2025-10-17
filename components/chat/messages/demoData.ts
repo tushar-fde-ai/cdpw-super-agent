@@ -388,6 +388,7 @@ export const simulateMessageFlow = (
   delay: number = 2000
 ): (() => void) => {
   let currentIndex = 0;
+  // eslint-disable-next-line prefer-const
   let intervalId: NodeJS.Timeout;
 
   const sendNextMessage = () => {

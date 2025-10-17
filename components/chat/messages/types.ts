@@ -15,6 +15,7 @@ export interface Message {
   timestamp: Date;
   metadata?: {
     agentName?: string;
+    agentColor?: string;
     documentData?: {
       title: string;
       description: string;
@@ -28,6 +29,7 @@ export interface Message {
     actions?: Array<{
       label: string;
       variant: 'primary' | 'secondary' | 'outline';
+      action?: string;
       onClick?: () => void;
     }>;
     attachedFile?: {
@@ -46,7 +48,7 @@ export interface Message {
 
 export interface MessageBubbleProps {
   content: string;
-  sender: 'user' | 'assistant';
+  sender: 'user' | 'assistant' | 'system';
   timestamp: Date;
   children?: React.ReactNode;
 }
@@ -91,9 +93,12 @@ export interface ActionButtonsProps {
 }
 
 export interface Action {
+  id: string;
   label: string;
   onClick: () => void;
   variant: 'primary' | 'secondary' | 'outline';
+  type?: 'primary' | 'danger' | 'default';
+  icon?: string;
 }
 
 export interface StarterPrompt {
@@ -101,4 +106,25 @@ export interface StarterPrompt {
   text: string;
   icon: string;
   category: 'campaign' | 'analysis' | 'journey' | 'creative';
+}
+
+export interface CollaborationInfo {
+  id: string;
+  title: string;
+  description: string;
+  participants: string[];
+  status: 'active' | 'completed' | 'pending';
+  agentIds: string[];
+  agentNames: string[];
+  agentColors: string[];
+  progress?: number;
+}
+
+export interface Question {
+  id: string;
+  text: string;
+  type: 'text' | 'select' | 'multiselect' | 'quick-reply' | 'multiple-choice' | 'open-ended';
+  options?: string[];
+  required?: boolean;
+  context?: string;
 }

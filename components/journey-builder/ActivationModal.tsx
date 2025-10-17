@@ -92,7 +92,7 @@ export default function ActivationModal({
     // Calculate estimated campaign duration based on journey steps
     const totalHours = journey.reduce((total, node) => {
       if (node.config && 'duration' in node.config) {
-        const config = node.config as any;
+        const config = node.config as { duration: number; unit: string };
         const hours = config.unit === 'hours' ? config.duration :
                      config.unit === 'days' ? config.duration * 24 :
                      config.duration / 60; // minutes to hours

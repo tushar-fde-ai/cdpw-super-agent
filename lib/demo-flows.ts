@@ -17,8 +17,9 @@ export interface DemoState {
 
 export interface Message {
   id: string;
-  type: 'user' | 'assistant';
+  type: 'user-text' | 'assistant-text';
   content: string;
+  sender: 'user' | 'assistant' | 'system';
   timestamp: Date;
   metadata?: {
     hasAttachment?: boolean;
@@ -48,7 +49,7 @@ export interface DemoFlowStep {
           'action-buttons' | 'navigate';
   content?: string;
   delay: number;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface DemoFlow {
@@ -377,9 +378,9 @@ export class DemoFlowPlayer {
   private isPlaying = false;
   private speed = 1; // 1x, 2x, 3x speed multiplier
   private timeouts: NodeJS.Timeout[] = [];
-  private onStateChange?: (state: any) => void;
+  private onStateChange?: (state: { type: string; data: { content?: string; metadata?: unknown } }) => void;
 
-  constructor(onStateChange?: (state: any) => void) {
+  constructor(onStateChange?: (state: { type: string; data: { content?: string; metadata?: unknown } }) => void) {
     this.onStateChange = onStateChange;
   }
 
@@ -539,14 +540,15 @@ export const demoFlowUtils = {
    * Create a demo message object
    */
   createMessage(
-    type: 'user' | 'assistant',
+    sender: 'user' | 'assistant',
     content: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): Message {
     return {
       id: this.generateMessageId(),
-      type,
+      type: sender === 'user' ? 'user-text' : 'assistant-text',
       content,
+      sender,
       timestamp: new Date(),
       metadata
     };

@@ -1,7 +1,8 @@
 // TypeScript interfaces for chat components
+import { Message } from './messages/types';
 
 export interface ConversationAreaProps {
-  messages: any[];
+  messages: Message[];
   isLoading?: boolean;
 }
 

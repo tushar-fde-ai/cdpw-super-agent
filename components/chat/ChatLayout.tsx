@@ -7,7 +7,7 @@ import ConversationArea from './ConversationArea';
 import ChatInput from './ChatInput';
 import OrchestrationPanel from './orchestration/OrchestrationPanel';
 import { Message } from './messages/types';
-import { DEMO_INITIAL_MESSAGES, DEMO_CONTINUATION_MESSAGES, DEMO_ABTEST_MESSAGES, simulateMessageFlow } from './messages/demoData';
+import { DEMO_CONTINUATION_MESSAGES, DEMO_ABTEST_MESSAGES } from './messages/demoData';
 import { Workflow } from './orchestration/types';
 import { DocumentViewerModal } from './document-viewer';
 import { sampleCampaignBrief } from './document-viewer/sampleData';
@@ -681,14 +681,15 @@ export default function ChatLayout() {
           onStateChange={(state) => {
             // Handle demo flow state changes
             if (state.type === 'user-message') {
-              const message = demoFlowUtils.createMessage('user', state.data.content, state.data.metadata);
+              const message = demoFlowUtils.createMessage('user', state.data.content || '', state.data.metadata as Record<string, unknown>);
               setMessages(prev => [...prev, message]);
             } else if (state.type === 'assistant-message') {
-              const message = demoFlowUtils.createMessage('assistant', state.data.content, state.data.metadata);
+              const message = demoFlowUtils.createMessage('assistant', state.data.content || '', state.data.metadata as Record<string, unknown>);
               setMessages(prev => [...prev, message]);
             } else if (state.type === 'navigate') {
               // Handle navigation to other pages
-              router.push(state.data.metadata.destination);
+              const destination = state.data.metadata as { destination: string };
+              router.push(destination.destination);
             }
           }}
           onExit={() => {
