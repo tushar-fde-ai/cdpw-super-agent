@@ -388,8 +388,6 @@ export const simulateMessageFlow = (
   delay: number = 2000
 ): (() => void) => {
   let currentIndex = 0;
-  // eslint-disable-next-line prefer-const
-  let intervalId: NodeJS.Timeout;
 
   const sendNextMessage = () => {
     if (currentIndex < DEMO_CAMPAIGN_BRIEF_MESSAGES.length) {
@@ -401,7 +399,7 @@ export const simulateMessageFlow = (
   };
 
   // Start sending messages
-  intervalId = setInterval(sendNextMessage, delay);
+  const intervalId = setInterval(sendNextMessage, delay);
 
   // Return cleanup function
   return () => {

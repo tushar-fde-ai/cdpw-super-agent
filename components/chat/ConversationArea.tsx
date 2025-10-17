@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { MessageCircle, Sparkles, Ghost } from 'lucide-react';
+import { MessageCircle, Sparkles, Ghost, Calendar } from 'lucide-react';
 import { Message } from './messages/types';
 import UserMessage from './messages/UserMessage';
 import AssistantMessage from './messages/AssistantMessage';
