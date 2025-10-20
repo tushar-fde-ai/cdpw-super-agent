@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import ChatHeader from './ChatHeader';
 import ConversationArea from './ConversationArea';
 import ChatInput from './ChatInput';
-import OrchestrationPanel from './orchestration/OrchestrationPanel';
 import { Message } from './messages/types';
 import { DEMO_CONTINUATION_MESSAGES, DEMO_ABTEST_MESSAGES } from './messages/demoData';
 import { Workflow } from './orchestration/types';
@@ -640,13 +639,6 @@ export default function ChatLayout() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col pt-16 pb-20 overflow-hidden">
-        {/* Orchestration Panel - Collapsible */}
-        <OrchestrationPanel
-          isExpanded={isOrchestrationExpanded}
-          onToggle={toggleOrchestration}
-          activeWorkflow={currentWorkflow}
-        />
-
         {/* Conversation Area - Full Width, Scrollable */}
         <ConversationArea
           messages={messages}
