@@ -28,7 +28,7 @@ export default function MessageBubble({ content, sender, timestamp, children }: 
             relative px-5 py-4 rounded-2xl shadow-lg
             ${isUser
               ? 'bg-blue-600 text-white rounded-br-md'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md'
+              : 'bg-gray-100 text-black rounded-bl-md'
             }
           `}
           whileHover={{ scale: 1.02 }}

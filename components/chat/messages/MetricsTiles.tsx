@@ -41,7 +41,7 @@ export default function MetricsTiles({ metrics, timestamp }: MetricsTilesProps) 
   const getChangeColor = (change?: string) => {
     if (!change) return '';
     const isPositive = change.startsWith('+');
-    return isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+    return isPositive ? 'text-green-700' : 'text-red-700';
   };
 
   return (
@@ -59,7 +59,7 @@ export default function MetricsTiles({ metrics, timestamp }: MetricsTilesProps) 
 
         {/* Metrics Grid */}
         <motion.div
-          className="bg-white dark:bg-gray-800 rounded-2xl rounded-bl-md p-4 shadow-lg border border-gray-200 dark:border-gray-700"
+          className="bg-white rounded-2xl rounded-bl-md p-4 shadow-sm border border-gray-200"
           initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.3 }}
@@ -72,7 +72,7 @@ export default function MetricsTiles({ metrics, timestamp }: MetricsTilesProps) 
               return (
                 <motion.div
                   key={index}
-                  className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600"
+                  className="bg-gray-50 rounded-lg p-4"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -81,7 +81,7 @@ export default function MetricsTiles({ metrics, timestamp }: MetricsTilesProps) 
                     {/* Icon */}
                     <div
                       className="p-2 rounded-lg flex-shrink-0"
-                      style={{ backgroundColor: metric.color ? `${metric.color}20` : '#7c3aed20' }}
+                      style={{ backgroundColor: metric.color ? `${metric.color}15` : '#7c3aed15' }}
                     >
                       <IconComponent
                         size={18}
@@ -92,17 +92,17 @@ export default function MetricsTiles({ metrics, timestamp }: MetricsTilesProps) 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       {/* Label */}
-                      <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1 leading-tight">
+                      <div className="text-sm font-semibold text-gray-800 mb-1 leading-tight">
                         {metric.label}
                       </div>
 
                       {/* Value and Change */}
                       <div className="flex items-center justify-between">
-                        <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                        <div className="text-xl font-bold text-gray-900">
                           {metric.value}
                         </div>
                         {metric.change && (
-                          <div className={`flex items-center space-x-1 text-xs font-medium ${getChangeColor(metric.change)} bg-white dark:bg-gray-800 px-2 py-1 rounded-md`}>
+                          <div className={`flex items-center space-x-1 text-xs font-medium ${getChangeColor(metric.change)} bg-white px-2 py-1 rounded-md shadow-sm`}>
                             {ChangeIcon && <ChangeIcon size={12} />}
                             <span>{metric.change}</span>
                           </div>

@@ -30,7 +30,7 @@ export default function ThinkingIndicator({ agentName, timestamp }: ThinkingIndi
 
         {/* Thinking Bubble */}
         <motion.div
-          className="relative px-5 py-4 rounded-2xl rounded-bl-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 shadow-lg"
+          className="relative px-5 py-4 rounded-2xl rounded-bl-md bg-gray-100 text-black shadow-lg"
           animate={{
             scale: [1, 1.02, 1],
           }}
@@ -51,7 +51,7 @@ export default function ThinkingIndicator({ agentName, timestamp }: ThinkingIndi
               {[0, 1, 2].map((index) => (
                 <motion.div
                   key={index}
-                  className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"
+                  className="w-2 h-2 bg-gray-400 rounded-full"
                   animate={{
                     scale: [1, 1.5, 1],
                     opacity: [0.5, 1, 0.5],

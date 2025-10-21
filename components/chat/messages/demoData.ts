@@ -277,12 +277,12 @@ export const DEMO_ABTEST_MESSAGES: Message[] = [
   {
     id: 'ab-2',
     type: 'assistant-text',
-    content: 'Perfect! I\'m now creating your A/B test with budget comparison analysis.',
+    content: 'Perfect! I\'m comparing your original budget against the selected A/B test budget to show you the performance differences.',
     sender: 'assistant',
     timestamp: new Date(),
     metadata: {
-      agentName: 'Campaign Strategy Agent',
-      agentColor: '#7c3aed',
+      agentName: 'Data Analytics Agent',
+      agentColor: '#14b8a6',
     },
   },
 
@@ -298,52 +298,24 @@ export const DEMO_ABTEST_MESSAGES: Message[] = [
     },
   },
 
-  // 4. A/B Test Comparison Metrics
+  // 4. A/B Test Results Summary (focused on differences only)
   {
     id: 'ab-4',
-    type: 'metrics-tiles',
-    content: '',
+    type: 'assistant-text',
+    content: 'A/B Test Analysis Complete! Here are the key performance differences between your original budget and the test variant:\n\n**ROI Impact:** The higher budget reduces ROI by 9% (3.8x vs 4.2x)\n**Reach Impact:** +24% more people reached (508K vs 410K)\n**Cost Efficiency:** Better cost per conversion ($23 vs $31, -26%)\n**Conversion Rate:** Higher conversion rate (2.8% vs 2.4%, +17%)',
     sender: 'assistant',
     timestamp: new Date(),
     metadata: {
-      metrics: [
-        {
-          label: 'Budget A Performance',
-          value: '4.2x ROI',
-          change: 'Baseline',
-          icon: 'DollarSign',
-          color: '#2563eb'
-        },
-        {
-          label: 'Budget B Performance',
-          value: '3.8x ROI',
-          change: '-9%',
-          icon: 'DollarSign',
-          color: '#f59e0b'
-        },
-        {
-          label: 'Reach Difference',
-          value: '+24%',
-          change: 'Budget B',
-          icon: 'Target',
-          color: '#10b981'
-        },
-        {
-          label: 'Cost Per Conversion',
-          value: '$23',
-          change: 'vs $31',
-          icon: 'TrendingUp',
-          color: '#7c3aed'
-        }
-      ]
+      agentName: 'Data Analytics Agent',
+      agentColor: '#14b8a6',
     },
   },
 
-  // 5. A/B Test Results
+  // 5. A/B Test Recommendation
   {
     id: 'ab-5',
     type: 'assistant-text',
-    content: 'Based on the analysis, the higher budget shows 24% more reach but 9% lower ROI. The optimal approach would be to start with your original budget and scale up if initial performance meets targets.',
+    content: '**Recommendation:** Start with your original budget for better ROI, then scale up if initial performance meets targets. The higher budget is more cost-effective per conversion but offers lower overall returns.',
     sender: 'assistant',
     timestamp: new Date(),
     metadata: {

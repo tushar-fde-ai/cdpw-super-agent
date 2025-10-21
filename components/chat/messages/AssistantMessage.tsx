@@ -35,20 +35,25 @@ export default function AssistantMessage({ message, onActionClick }: AssistantMe
     });
   };
 
+  // Check if this is an action-buttons-only message
+  const isActionButtonsOnly = !message.content.trim() && message.metadata?.actions && message.metadata.actions.length > 0;
+
   return (
     <MessageBubble
       content=""
       sender={message.sender}
       timestamp={message.timestamp}
     >
-      {/* Render formatted content */}
-      <div className="text-sm">
-        {renderFormattedContent(message.content)}
-      </div>
+      {/* Render formatted content only if there is content */}
+      {message.content.trim() && (
+        <div className="text-sm">
+          {renderFormattedContent(message.content)}
+        </div>
+      )}
 
       {/* Document Preview Card */}
       {message.metadata?.documentData && (
-        <div className="mt-3">
+        <div className={message.content.trim() ? "mt-3" : ""}>
           <DocumentPreviewCard
             title={message.metadata.documentData.title}
             description={message.metadata.documentData.description}
@@ -60,7 +65,7 @@ export default function AssistantMessage({ message, onActionClick }: AssistantMe
 
       {/* Action Buttons */}
       {message.metadata?.actions && message.metadata.actions.length > 0 && (
-        <div className="mt-3">
+        <div className={message.content.trim() || message.metadata?.documentData ? "mt-3" : ""}>
           <ActionButtons
             actions={message.metadata.actions.map(action => ({
               label: action.label,

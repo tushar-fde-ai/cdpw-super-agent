@@ -11,7 +11,7 @@ export default function ActionButtons({ actions }: ActionButtonsProps) {
       case 'secondary':
         return 'bg-gray-600 hover:bg-gray-700 text-white shadow-md hover:shadow-lg';
       case 'outline':
-        return 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300';
+        return 'border border-gray-300 hover:bg-gray-50 text-gray-800 hover:text-gray-900';
       default:
         return 'bg-gray-600 hover:bg-gray-700 text-white shadow-md hover:shadow-lg';
     }

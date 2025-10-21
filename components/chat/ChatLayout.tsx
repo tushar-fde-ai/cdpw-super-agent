@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import ChatHeader from './ChatHeader';
 import ConversationArea from './ConversationArea';
-import ChatInput from './ChatInput';
 import { Message } from './messages/types';
 import { DEMO_CONTINUATION_MESSAGES, DEMO_ABTEST_MESSAGES } from './messages/demoData';
 import { Workflow } from './orchestration/types';
@@ -100,6 +99,107 @@ export default function ChatLayout() {
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isOrchestrationExpanded, setIsOrchestrationExpanded] = useState(false);
+  const [prefilledMessage, setPrefilledMessage] = useState<string>('');
+  const processedMessageIds = useRef<Set<string>>(new Set());
+  const processedParams = useRef<Set<string>>(new Set());
+
+  // Handle sending new messages
+  const handleSendMessage = useCallback(async (content: string) => {
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user-text',
+      content,
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+
+    // Check if this is the Halloween campaign prompt
+    if (content === 'I have a Halloween themed campaign that should deploy two weeks before Halloween') {
+      // Start the Halloween demo flow
+      setTimeout(() => {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant-text',
+          content: 'Great! I\'ll help you create a comprehensive campaign brief for your Halloween campaign. Let me find the right agents for you...',
+          sender: 'assistant',
+          timestamp: new Date(),
+          metadata: {
+            agentName: 'Marketing Super Agent',
+            agentColor: '#7c3aed'
+          }
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+
+        // Show a brief "finding agents" state, then activate orchestration panel
+        setTimeout(() => {
+          // Activate orchestration panel and set the workflow
+          setIsOrchestrationExpanded(true);
+
+          // Add the "found agents" message
+          const foundAgentsMessage: Message = {
+            id: (Date.now() + 2).toString(),
+            type: 'assistant-text',
+            content: 'Perfect! I\'ve assembled your specialized marketing team. Let me gather some information to get started.',
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Campaign Strategy Agent',
+              agentColor: '#7c3aed'
+            }
+          };
+
+          setMessages(prev => [...prev, foundAgentsMessage]);
+
+          // Continue with the question prompt after another delay
+          setTimeout(() => {
+            const questionMessage: Message = {
+              id: (Date.now() + 3).toString(),
+              type: 'question',
+              content: '',
+              sender: 'assistant',
+              timestamp: new Date(),
+              metadata: {
+                questions: [
+                  'What is your estimated budget range for this Halloween campaign?',
+                ],
+                questionOptions: [
+                  {
+                    question: 'What is your estimated budget range for this Halloween campaign?',
+                    options: ['Under $10K', '$10K - $50K', '$50K - $100K', '$100K+']
+                  }
+                ]
+              }
+            };
+
+            setMessages(prev => [...prev, questionMessage]);
+          }, 1500);
+        }, 2000);
+      }, 1000);
+    } else {
+      // Handle other messages normally
+      setIsLoading(true);
+
+      setTimeout(() => {
+        const agentMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant-text',
+          content: `Thank you for your message: "${content}". I'm analyzing this request and will coordinate with the appropriate agents to provide you with a comprehensive response. Let me break this down and get our team working on it.`,
+          sender: 'assistant',
+          timestamp: new Date(),
+          metadata: {
+            agentName: 'Campaign Strategy Agent',
+            agentColor: '#7c3aed'
+          }
+        };
+
+        setMessages(prev => [...prev, agentMessage]);
+        setIsLoading(false);
+      }, 2000);
+    }
+  }, []);
 
   // Save orchestration panel state to localStorage
   useEffect(() => {
@@ -110,12 +210,21 @@ export default function ChatLayout() {
   useEffect(() => {
     if (messages.length === 0) return;
 
+    // Skip workflow progression if we're in A/B test mode
+    if (demoPhase === 'abtest') return;
+
     const lastMessage = messages[messages.length - 1];
+
+    // Skip if we've already processed this message
+    if (processedMessageIds.current.has(lastMessage.id)) return;
 
     // Only process assistant messages and question prompts for agent tracking
     if (lastMessage?.type === 'assistant-text' || lastMessage?.type === 'question') {
       const content = lastMessage.content || '';
       const agentName = lastMessage.metadata?.agentName;
+
+      // Mark message as processed
+      processedMessageIds.current.add(lastMessage.id);
 
       // Track agent progression based on message content and agent names
       if (lastMessage.type === 'question' && (content.includes('budget') || lastMessage.metadata?.questions?.[0]?.includes('budget'))) {
@@ -143,31 +252,79 @@ export default function ChatLayout() {
         setCompletedAgents(prev => new Set([...prev, 'campaign-strategy-final']));
         setActiveAgent(null);
       }
-
-      // Update workflow with current state
-      setCurrentWorkflow(getDynamicWorkflow(completedAgents, activeAgent));
     }
-  }, [messages, completedAgents, activeAgent]);
+  }, [messages, demoPhase]);
+
+  // Update workflow whenever completed agents or active agent changes
+  useEffect(() => {
+    setCurrentWorkflow(getDynamicWorkflow(completedAgents, activeAgent));
+  }, [completedAgents, activeAgent]);
 
   // Handle URL parameters for demo flows and prompts
   useEffect(() => {
     const demoParam = searchParams.get('demo') as DemoFlowType;
     const promptParam = searchParams.get('prompt');
+    const campaignParam = searchParams.get('campaign');
+    const viewParam = searchParams.get('view');
 
-    if (demoParam) {
+    // Create a unique key for this parameter combination
+    const paramKey = `${demoParam || 'none'}-${promptParam || 'none'}-${campaignParam || 'none'}-${viewParam || 'none'}`;
+
+    // Skip if we've already processed these parameters
+    if (processedParams.current.has(paramKey)) {
+      return;
+    }
+
+    if (campaignParam === 'halloween-brief' && viewParam === 'complete') {
+      // Load the complete Halloween campaign conversation
+      processedParams.current.add(paramKey);
+
+      // Import the complete demo messages (initial + continuation)
+      import('./messages/demoData').then(({ DEMO_INITIAL_MESSAGES, DEMO_CONTINUATION_MESSAGES }) => {
+        const completeConversation = [
+          ...DEMO_INITIAL_MESSAGES,
+          // Add a user answer for the budget question
+          {
+            id: 'user-budget-answer',
+            type: 'user-text' as const,
+            content: '$50K - $100K',
+            sender: 'user' as const,
+            timestamp: new Date()
+          },
+          ...DEMO_CONTINUATION_MESSAGES
+        ];
+
+        setMessages(completeConversation);
+        setDemoPhase('complete');
+        setActiveAgent(null);
+        setCompletedAgents(new Set(['campaign-strategy', 'audience-persona', 'data-analytics', 'journey-orchestration']));
+        setIsOrchestrationExpanded(true);
+
+        // Set workflow
+        setCurrentWorkflow(getDynamicWorkflow(
+          new Set(['campaign-strategy', 'audience-persona', 'data-analytics', 'journey-orchestration']),
+          null
+        ));
+      });
+
+      // Clear URL parameters after processing
+      router.replace('/chat');
+    } else if (demoParam) {
       const flow = demoFlowUtils.getFlow(demoParam);
       if (flow) {
+        processedParams.current.add(paramKey);
         startDemo(flow);
         setIsOrchestrationExpanded(true);
         // Clear URL parameters after processing
         router.replace('/chat');
       }
     } else if (promptParam) {
-      // Handle prompt parameter by adding a user message
-      const userMessage = demoFlowUtils.createMessage('user', promptParam);
-      setMessages([userMessage]);
-      // Clear URL parameters after processing
+      // Handle prompt parameter by pre-filling the input field instead of auto-sending
+      processedParams.current.add(paramKey);
+      // Clear URL parameters after processing but keep the prompt for pre-filling
       router.replace('/chat');
+      // Set the pre-filled message for the input field
+      setPrefilledMessage(promptParam);
     }
   }, [searchParams, startDemo, router]);
 
@@ -250,14 +407,33 @@ export default function ChatLayout() {
 
   // Handle question submission for campaign flows
   const handleQuestionSubmit = (answers: string[]) => {
-    // Check if we have a Halloween campaign workflow active or if we're in A/B test mode
-    const isHalloweenFlow = currentWorkflow?.id === 'campaign-brief-creation';
+    // Check for A/B test flow in multiple ways to be more robust
     const isABTestFlow = demoPhase === 'abtest';
 
-    if (isHalloweenFlow || isABTestFlow) {
+    // Also check if the last question message was an A/B test question
+    const lastQuestionMessage = [...messages].reverse().find(m => m.type === 'question');
+    const isABTestQuestion = lastQuestionMessage?.metadata?.isABTestQuestion === true;
+
+    // Final determination: either demoPhase is abtest OR the question was marked as A/B test
+    const isActuallyABTestFlow = isABTestFlow || isABTestQuestion;
+    const isHalloweenFlow = currentWorkflow?.id === 'campaign-brief-creation' && !isActuallyABTestFlow;
+
+    // Debug logging
+    console.log('🔍 Question Submit Debug:', {
+      demoPhase,
+      isABTestFlow,
+      isABTestQuestion,
+      isActuallyABTestFlow,
+      isHalloweenFlow,
+      currentWorkflow: currentWorkflow?.id,
+      lastQuestionMessage: lastQuestionMessage?.id,
+      answers
+    });
+
+    if (isActuallyABTestFlow || isHalloweenFlow) {
       // Add user response message
       const userAnswerMessage: Message = {
-        id: 'user-answer',
+        id: `user-answer-${Date.now()}`,
         type: 'user-text',
         content: answers.join(', '),
         sender: 'user',
@@ -266,13 +442,22 @@ export default function ChatLayout() {
 
       setMessages(prev => [...prev, userAnswerMessage]);
 
-      // Determine which flow to continue with
-      const messagesToUse = isABTestFlow ? DEMO_ABTEST_MESSAGES.slice(1) : DEMO_CONTINUATION_MESSAGES; // Skip first question message for A/B test
-      const delaysToUse = isABTestFlow ? [1000, 2000, 1500, 2000, 1500] : [1000, 2000, 1500, 2000, 1000, 2000, 1500, 2000, 4000, 1500, 2000];
+      // Determine which flow to continue with - A/B test takes precedence
+      const messagesToUse = isActuallyABTestFlow ? DEMO_ABTEST_MESSAGES.slice(1) : DEMO_CONTINUATION_MESSAGES; // Skip first question message for A/B test
+      const delaysToUse = isActuallyABTestFlow ? [1000, 2000, 1500, 2000, 1500] : [1000, 2000, 1500, 2000, 1000, 2000, 1500, 2000, 4000, 1500, 2000];
 
-      if (isABTestFlow) {
-        // Keep A/B test phase
+      // Debug logging for message selection
+      console.log('📨 Messages Selected:', {
+        isActuallyABTestFlow,
+        messageCount: messagesToUse.length,
+        messageTypes: messagesToUse.map(m => m.type),
+        messageIds: messagesToUse.map(m => m.id)
+      });
+
+      if (isActuallyABTestFlow) {
+        // Keep A/B test phase and set appropriate agent state
         setDemoPhase('abtest');
+        setActiveAgent('data-analytics'); // Data Analytics Agent handles A/B test analysis
       } else if (isHalloweenFlow) {
         // For Halloween flow, start the continuation with proper workflow progression
         setDemoPhase('continuation');
@@ -313,7 +498,7 @@ export default function ChatLayout() {
           streamCleanupRef.current = () => clearTimeout(timeoutId);
         } else {
           streamCleanupRef.current = null;
-          if (!isABTestFlow) {
+          if (!isActuallyABTestFlow) {
             setDemoPhase('complete');
           }
         }
@@ -353,15 +538,23 @@ export default function ChatLayout() {
     switch (actionLabel) {
       case 'Set Up A/B Test':
         // Start A/B test flow
-        setDemoPhase('abtest');
+        console.log('🚀 Setting up A/B Test - setting demoPhase to abtest');
 
-        // Add the A/B test question
+        // Add the A/B test question with special metadata to identify A/B test questions
         const abtestQuestion = {
           ...DEMO_ABTEST_MESSAGES[0],
-          timestamp: new Date()
+          timestamp: new Date(),
+          metadata: {
+            ...DEMO_ABTEST_MESSAGES[0].metadata,
+            isABTestQuestion: true // Add flag to identify this as A/B test question
+          }
         };
 
+        console.log('📋 Adding A/B test question:', abtestQuestion);
         setMessages(prev => [...prev, abtestQuestion]);
+
+        // Set demo phase after adding the message to ensure state consistency
+        setDemoPhase('abtest');
         break;
 
       case 'Use Recommended Strategy':
@@ -526,104 +719,6 @@ export default function ChatLayout() {
     }
   };
 
-  // Handle sending new messages
-  const handleSendMessage = async (content: string) => {
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user-text',
-      content,
-      sender: 'user',
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-
-    // Check if this is the Halloween campaign prompt
-    if (content === 'I have a Halloween themed campaign that should deploy two weeks before Halloween') {
-      // Start the Halloween demo flow
-      setTimeout(() => {
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'assistant-text',
-          content: 'Great! I\'ll help you create a comprehensive campaign brief for your Halloween campaign. Let me find the right agents for you...',
-          sender: 'assistant',
-          timestamp: new Date(),
-          metadata: {
-            agentName: 'Marketing Super Agent',
-            agentColor: '#7c3aed'
-          }
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-
-        // Show a brief "finding agents" state, then activate orchestration panel
-        setTimeout(() => {
-          // Activate orchestration panel and set the workflow
-          setIsOrchestrationExpanded(true);
-
-          // Add the "found agents" message
-          const foundAgentsMessage: Message = {
-            id: (Date.now() + 2).toString(),
-            type: 'assistant-text',
-            content: 'Perfect! I\'ve assembled your specialized marketing team. Let me gather some information to get started.',
-            sender: 'assistant',
-            timestamp: new Date(),
-            metadata: {
-              agentName: 'Campaign Strategy Agent',
-              agentColor: '#7c3aed'
-            }
-          };
-
-          setMessages(prev => [...prev, foundAgentsMessage]);
-
-          // Continue with the question prompt after another delay
-          setTimeout(() => {
-            const questionMessage: Message = {
-              id: (Date.now() + 3).toString(),
-              type: 'question',
-              content: '',
-              sender: 'assistant',
-              timestamp: new Date(),
-              metadata: {
-                questions: [
-                  'What is your estimated budget range for this Halloween campaign?',
-                ],
-                questionOptions: [
-                  {
-                    question: 'What is your estimated budget range for this Halloween campaign?',
-                    options: ['Under $10K', '$10K - $50K', '$50K - $100K', '$100K+']
-                  }
-                ]
-              }
-            };
-
-            setMessages(prev => [...prev, questionMessage]);
-          }, 1500);
-        }, 2000);
-      }, 1000);
-    } else {
-      // Handle other messages normally
-      setIsLoading(true);
-
-      setTimeout(() => {
-        const agentMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          type: 'assistant-text',
-          content: `Thank you for your message: "${content}". I'm analyzing this request and will coordinate with the appropriate agents to provide you with a comprehensive response. Let me break this down and get our team working on it.`,
-          sender: 'assistant',
-          timestamp: new Date(),
-          metadata: {
-            agentName: 'Campaign Strategy Agent',
-            agentColor: '#7c3aed'
-          }
-        };
-
-        setMessages(prev => [...prev, agentMessage]);
-        setIsLoading(false);
-      }, 2000);
-    }
-  };
-
   // Handle document viewer close
   const handleDocumentViewerClose = () => {
     setIsDocumentViewerOpen(false);
@@ -638,7 +733,7 @@ export default function ChatLayout() {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col pt-16 pb-20 overflow-hidden">
+      <div className="flex-1 flex flex-col pt-16 overflow-hidden">
         {/* Conversation Area - Full Width, Scrollable */}
         <ConversationArea
           messages={messages}
@@ -647,15 +742,15 @@ export default function ChatLayout() {
           onQuestionSubmit={handleQuestionSubmit}
           onActionClick={handleActionClick}
           onScroll={handleScroll}
+          currentWorkflow={currentWorkflow}
+          completedAgents={completedAgents}
+          activeAgent={activeAgent}
+          onSendMessage={handleSendMessage}
+          prefilledMessage={prefilledMessage}
+          onPrefilledMessageClear={() => setPrefilledMessage('')}
         />
       </div>
 
-      {/* Fixed Chat Input */}
-      <ChatInput
-        onSendMessage={handleSendMessage}
-        disabled={isLoading}
-        placeholder="Type your message here..."
-      />
 
       {/* Document Viewer Modal */}
       <DocumentViewerModal

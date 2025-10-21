@@ -52,7 +52,7 @@ export default function QuestionCard({
 
   return (
     <motion.div
-      className="mt-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4"
+      className="mt-3 bg-white border border-gray-200 rounded-xl p-4"
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.4 }}
@@ -65,7 +65,7 @@ export default function QuestionCard({
         >
           <HelpCircle size={16} className="text-white" />
         </motion.div>
-        <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+        <h4 className="text-sm font-semibold text-black">
           I need a few more details:
         </h4>
       </div>
@@ -81,16 +81,16 @@ export default function QuestionCard({
             transition={{ duration: 0.3, delay: index * 0.1 }}
           >
             <div className="flex items-start space-x-2">
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-300 mt-1">
+              <span className="text-sm font-medium text-black mt-1">
                 {index + 1}.
               </span>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                <p className="text-sm font-medium text-black">
                   {question.text}
                   {question.required && <span className="text-red-500 ml-1">*</span>}
                 </p>
                 {question.context && (
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  <p className="text-xs text-gray-600 mt-1">
                     {question.context}
                   </p>
                 )}
@@ -108,7 +108,7 @@ export default function QuestionCard({
                       px-3 py-1 rounded-full text-xs font-medium transition-all duration-200
                       ${answers[question.id] === option
                         ? 'bg-blue-600 text-white'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
+                        : 'bg-white text-black border border-gray-300 hover:border-blue-400'
                       }
                     `}
                     whileHover={{ scale: 1.05 }}
@@ -136,7 +136,7 @@ export default function QuestionCard({
                       onChange={() => handleQuickReply(question.id, option)}
                       className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-sm text-black">
                       {option}
                     </span>
                   </motion.label>
@@ -147,7 +147,7 @@ export default function QuestionCard({
             {/* Show current answer */}
             {answers[question.id] && question.type !== 'open-ended' && (
               <motion.div
-                className="ml-6 text-xs text-blue-600 dark:text-blue-400 font-medium"
+                className="ml-6 text-xs text-blue-600 font-medium"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
@@ -170,7 +170,7 @@ export default function QuestionCard({
             value={currentAnswer}
             onChange={(e) => setCurrentAnswer(e.target.value)}
             placeholder="Type your detailed response here..."
-            className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full p-3 rounded-lg border border-gray-300 bg-white text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             rows={3}
           />
         </motion.div>
@@ -190,7 +190,7 @@ export default function QuestionCard({
             flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200
             ${(allQuestionsAnswered || currentAnswer.trim())
               ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
-              : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }
           `}
           whileHover={(allQuestionsAnswered || currentAnswer.trim()) ? { scale: 1.02 } : {}}

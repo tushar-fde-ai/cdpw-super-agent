@@ -98,7 +98,7 @@ export default function Hero() {
               transition={{ duration: 0.8, delay: 0.6 }}
               className="flex justify-center lg:justify-start"
             >
-              <Link href="/chat">
+              <Link href="/start">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
