@@ -3,17 +3,23 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { DocumentViewerModal } from '../../components/chat/document-viewer';
 import { sampleCampaignBrief } from '../../components/chat/document-viewer/sampleData';
-import { Rocket, Target, BarChart3, Sparkles, Lightbulb, Bot, Link, Clock, CheckCircle, AlertCircle, Users, FileText, Calendar, MessageCircle } from 'lucide-react';
+import { Rocket, Target, BarChart3, Sparkles, Lightbulb, Bot, Link, Clock, CheckCircle, AlertCircle, Users, FileText, Calendar, MessageCircle, Search, Zap, Palette, User, Layout, Database, PenTool, Type, BrainCircuit, Share2, Monitor } from 'lucide-react';
 
 export default function StartPage() {
   const router = useRouter();
   const [hasRunningActivities, setHasRunningActivities] = useState(false);
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
 
-  // Don't automatically restore campaign state from localStorage
-  // The running activities should only show after starting a campaign in this session
+  // Check localStorage on component mount to restore campaign state if user has created campaigns
+  useEffect(() => {
+    const savedCampaignState = localStorage.getItem('msa_has_campaigns');
+    if (savedCampaignState === 'true') {
+      setHasRunningActivities(true);
+    }
+  }, []);
 
   // Mock data for running activities - in a real app this would come from state management or API
   const runningActivities = [
@@ -37,6 +43,7 @@ export default function StartPage() {
   const handleTaskClick = (action: string) => {
     if (action === 'halloween-campaign') {
       setHasRunningActivities(true); // Show running activities after starting campaign
+      localStorage.setItem('msa_has_campaigns', 'true'); // Persist campaign state
       handleStarterClick('I have a Halloween themed campaign that should deploy two weeks before Halloween');
     } else {
       // For now, just go to chat page for other actions
@@ -54,6 +61,16 @@ export default function StartPage() {
     setIsDocumentViewerOpen(true);
   };
 
+  const handleCompetitiveIntelligence = (campaignId: number) => {
+    // Navigate to split chat interface for competitive research
+    router.push('/chat?mode=competitive&campaign=halloween-brief');
+  };
+
+  const handleCampaignExecution = (campaignId: number) => {
+    // Navigate to campaign execution interface
+    router.push('/chat?mode=execution&campaign=halloween-brief');
+  };
+
   const handleDocumentViewerClose = () => {
     setIsDocumentViewerOpen(false);
   };
@@ -61,11 +78,11 @@ export default function StartPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending_approval':
-        return <Clock className="w-4 h-4 text-orange-600" />;
+        return <Clock className="w-4 h-4 text-slate-600" />;
       case 'approved':
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
+        return <CheckCircle className="w-4 h-4 text-emerald-600" />;
       case 'rejected':
-        return <AlertCircle className="w-4 h-4 text-red-600" />;
+        return <AlertCircle className="w-4 h-4 text-slate-600" />;
       default:
         return <Clock className="w-4 h-4 text-gray-600" />;
     }
@@ -107,7 +124,7 @@ export default function StartPage() {
         >
           <h1 className="text-3xl font-bold text-black mb-2 flex items-center justify-center gap-3">
             Hey Kate! Let&apos;s launch something amazing
-            <Rocket className="w-8 h-8 text-blue-600" />
+            <Rocket className="w-8 h-8 text-slate-700" />
           </h1>
           <p className="text-gray-600">
             Time to orchestrate campaigns that deliver results and drive engagement.
@@ -124,11 +141,11 @@ export default function StartPage() {
           <div className="relative">
             <textarea
               placeholder="Describe your campaign goals, budget, target audience, and timeline..."
-              className="w-full p-4 pr-12 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 resize-none bg-white text-black placeholder-gray-500"
+              className="w-full p-4 pr-12 border-2 rounded-xl focus:outline-none focus:ring-0 resize-none bg-white text-black placeholder-gray-500 animate-gradient-border"
               rows={3}
             />
             <button
-              className="absolute right-3 top-3 p-2 text-gray-400 hover:text-blue-600 transition-colors"
+              className="absolute right-3 top-3 p-2 text-gray-400 hover:text-black transition-colors"
               onClick={() => router.push('/chat')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,6 +153,25 @@ export default function StartPage() {
               </svg>
             </button>
           </div>
+          <style jsx>{`
+            @keyframes gradient-border {
+              0% {
+                border-color: #475569;
+              }
+              33% {
+                border-color: #64748b;
+              }
+              66% {
+                border-color: #94a3b8;
+              }
+              100% {
+                border-color: #475569;
+              }
+            }
+            .animate-gradient-border {
+              animation: gradient-border 4s ease-in-out infinite;
+            }
+          `}</style>
         </motion.div>
 
         {/* Quick Start Tasks */}
@@ -145,37 +181,39 @@ export default function StartPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <h2 className="text-xl font-semibold text-black mb-4 text-center">
-            Quick Start by Task
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { id: 1, label: 'Design a Campaign Program', icon: 'Target', action: 'halloween-campaign' },
-              { id: 2, label: 'Pick My Channel Mix', icon: 'BarChart3', action: 'default' },
-              { id: 3, label: 'Create a Creative Brief', icon: 'Sparkles', action: 'default' },
-              { id: 4, label: 'Brainstorm creative ideas', icon: 'Lightbulb', action: 'default' }
-            ].map((task) => {
-              const iconMap = {
-                Target: Target,
-                BarChart3: BarChart3,
-                Sparkles: Sparkles,
-                Lightbulb: Lightbulb
-              };
-              const IconComponent = iconMap[task.icon as keyof typeof iconMap];
+          <div className="bg-white rounded-xl p-6 border border-gray-200">
+            <h2 className="text-xl font-semibold text-black mb-4 text-center">
+              Quick Start by Task
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { id: 1, label: 'Design a Campaign Program', icon: 'Target', action: 'halloween-campaign' },
+                { id: 2, label: 'Pick My Channel Mix', icon: 'BarChart3', action: 'default' },
+                { id: 3, label: 'Create a Creative Brief', icon: 'Sparkles', action: 'default' },
+                { id: 4, label: 'Brainstorm creative ideas', icon: 'Lightbulb', action: 'default' }
+              ].map((task) => {
+                const iconMap = {
+                  Target: Target,
+                  BarChart3: BarChart3,
+                  Sparkles: Sparkles,
+                  Lightbulb: Lightbulb
+                };
+                const IconComponent = iconMap[task.icon as keyof typeof iconMap];
 
-              return (
-                <button
-                  key={task.id}
-                  className="p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-md transition-all duration-200 text-left"
-                  onClick={() => handleTaskClick(task.action)}
-                >
-                  <div className="flex items-center space-x-2">
-                    <IconComponent className="w-5 h-5 text-blue-600" />
-                    <span className="text-sm font-medium text-black">{task.label}</span>
-                  </div>
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={task.id}
+                    className="p-4 bg-gray-50 border border-gray-200 rounded-lg hover:border-slate-400 hover:shadow-md transition-all duration-200 text-left"
+                    onClick={() => handleTaskClick(task.action)}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <IconComponent className="w-5 h-5 text-slate-700" />
+                      <span className="text-sm font-medium text-black">{task.label}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </motion.div>
 
@@ -189,63 +227,70 @@ export default function StartPage() {
           {/* Available Specialist Agents */}
           <div className="bg-white rounded-xl p-6 border border-gray-200">
             <h3 className="text-lg font-semibold text-black mb-4 flex items-center gap-2">
-              <Bot className="w-5 h-5 text-blue-600" />
+              <Bot className="w-5 h-5 text-slate-700" />
               Available Specialist Agents
             </h3>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { name: 'Campaign Architect Agent', color: 'bg-blue-100 text-blue-700', icon: 'A' },
-                { name: 'Persona Research Agent', color: 'bg-green-100 text-green-700', icon: 'P' },
-                { name: 'Channel Strategy Agent', color: 'bg-orange-100 text-orange-700', icon: 'C' },
-                { name: 'Competitive Intelligence Agent', color: 'bg-purple-100 text-purple-700', icon: 'CI' },
-                { name: 'Creative Brief Agent', color: 'bg-red-100 text-red-700', icon: 'CB' },
-                { name: 'Ad Copy Agent', color: 'bg-indigo-100 text-indigo-700', icon: 'AC' },
-                { name: 'Creative Ideation Agent', color: 'bg-pink-100 text-pink-700', icon: 'CI' },
-                { name: 'Social Creative Agent', color: 'bg-purple-100 text-purple-700', icon: 'SC' },
-                { name: 'Display Creative Agent', color: 'bg-orange-100 text-orange-700', icon: 'DC' },
-                { name: 'Knowledge Base Onboarding Agent', color: 'bg-teal-100 text-teal-700', icon: 'KB' }
-              ].map((agent, index) => (
-                <div key={index} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${agent.color}`}>
-                    {agent.icon}
+                { name: 'Campaign Architect Agent', icon: Target, color: 'text-slate-700', bg: 'bg-slate-50' },
+                { name: 'Persona Research Agent', icon: User, color: 'text-slate-700', bg: 'bg-slate-50' },
+                { name: 'Channel Strategy Agent', icon: BarChart3, color: 'text-slate-700', bg: 'bg-slate-50' },
+                { name: 'Competitive Intelligence Agent', icon: Search, color: 'text-slate-700', bg: 'bg-slate-50' },
+                { name: 'Creative Brief Agent', icon: FileText, color: 'text-slate-700', bg: 'bg-slate-50' },
+                { name: 'Ad Copy Agent', icon: Type, color: 'text-slate-700', bg: 'bg-slate-50' },
+                { name: 'Creative Ideation Agent', icon: BrainCircuit, color: 'text-slate-700', bg: 'bg-slate-50' },
+                { name: 'Social Creative Agent', icon: Share2, color: 'text-slate-700', bg: 'bg-slate-50' },
+                { name: 'Display Creative Agent', icon: Monitor, color: 'text-slate-700', bg: 'bg-slate-50' },
+                { name: 'Knowledge Base Onboarding Agent', icon: Database, color: 'text-slate-700', bg: 'bg-slate-50' }
+              ].map((agent, index) => {
+                const IconComponent = agent.icon;
+                return (
+                  <div key={index} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className={`w-6 h-6 rounded flex items-center justify-center ${agent.bg} border border-gray-200`}>
+                      <IconComponent className={`w-3.5 h-3.5 ${agent.color}`} />
+                    </div>
+                    <span className="text-sm text-black">{agent.name}</span>
                   </div>
-                  <span className="text-sm text-black">{agent.name}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           {/* Connected Apps */}
           <div className="bg-white rounded-xl p-6 border border-gray-200">
             <h3 className="text-lg font-semibold text-black mb-4 flex items-center gap-2">
-              <Link className="w-5 h-5 text-blue-600" />
-              Connected Apps
+              <Link className="w-5 h-5 text-slate-700" />
+              App Integrations
             </h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-4">
               {[
-                { name: 'Salesforce', color: 'bg-blue-100 text-blue-700', icon: 'SF' },
-                { name: 'HubSpot', color: 'bg-orange-100 text-orange-700', icon: 'HS' },
-                { name: 'Mailchimp', color: 'bg-yellow-100 text-yellow-700', icon: 'MC' },
-                { name: 'Google Analytics', color: 'bg-red-100 text-red-700', icon: 'GA' },
-                { name: 'Facebook Ads', color: 'bg-blue-100 text-blue-700', icon: 'FB' },
-                { name: 'Google Ads', color: 'bg-green-100 text-green-700', icon: 'GA' },
-                { name: 'Shopify', color: 'bg-green-100 text-green-700', icon: 'SH' },
-                { name: 'Slack', color: 'bg-purple-100 text-purple-700', icon: 'SL' },
-                { name: 'Zapier', color: 'bg-orange-100 text-orange-700', icon: 'ZA' },
-                { name: 'Canva', color: 'bg-pink-100 text-pink-700', icon: 'CA' }
+                { name: 'Mailchimp', logo: '/logos/mailchimp.png' },
+                { name: 'Google Analytics', logo: '/logos/Logo_Google_Analytics.svg' },
+                { name: 'Google Ads', logo: '/logos/Google_Ads_logo.svg' },
+                { name: 'HubSpot', logo: '/logos/HubSpot_Logo.svg' },
+                { name: 'Slack', logo: '/logos/SLA-Slack-from-Salesforce-logo.png' },
+                { name: 'Zapier', logo: '/logos/zapier-logo_black.svg' },
+                { name: 'Airtable', logo: '/logos/Airtable-Logo-Color.png' },
+                { name: 'Marketo', logo: '/logos/Marketo_Company_Logo.png' },
+                { name: 'Amazon Ads', logo: '/logos/amazon-ads.png' }
               ].map((app, index) => (
-                <div key={index} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${app.color}`}>
-                    {app.icon}
+                <div key={index} className="flex items-center justify-center p-4 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
+                  <div className={`relative ${app.name === 'Mailchimp' || app.name === 'Google Ads' ? 'w-32 h-12' : 'w-24 h-8'} flex items-center justify-center ${app.name === 'Amazon Ads' ? 'bg-gray-800 rounded px-2' : ''}`}>
+                    <Image
+                      src={app.logo}
+                      alt={app.name}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
                   </div>
-                  <span className="text-sm text-black">{app.name}</span>
                 </div>
               ))}
             </div>
           </div>
         </motion.div>
 
-        {/* Running Activities */}
+        {/* Task Manager */}
         {hasRunningActivities && runningActivities.length > 0 && (
           <motion.div
             className="mt-6"
@@ -255,8 +300,8 @@ export default function StartPage() {
           >
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <h3 className="text-lg font-semibold text-black mb-4 flex items-center gap-2">
-                <Target className="w-5 h-5 text-blue-600" />
-                Running Activities
+                <Target className="w-5 h-5 text-slate-700" />
+                Task Manager
               </h3>
 
               <div className="space-y-4">
@@ -293,13 +338,13 @@ export default function StartPage() {
                         {/* Campaign Details */}
                         <div className="grid grid-cols-2 gap-4 mb-3">
                           <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-blue-600" />
+                            <Users className="w-4 h-4 text-black" />
                             <span className="text-sm text-gray-800">
                               <span className="font-medium">Target:</span> {activity.targetAudience}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Target className="w-4 h-4 text-green-600" />
+                            <Target className="w-4 h-4 text-black" />
                             <span className="text-sm text-gray-800">
                               <span className="font-medium">Budget:</span> {activity.budget}
                             </span>
@@ -313,7 +358,7 @@ export default function StartPage() {
                             {activity.agents.map((agent, index) => (
                               <span
                                 key={index}
-                                className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800"
+                                className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-black border border-gray-300"
                               >
                                 <Bot className="w-3 h-3 mr-1" />
                                 {agent}
@@ -324,22 +369,39 @@ export default function StartPage() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex justify-end gap-3">
-                      <button
-                        onClick={() => handleViewChatHistory(activity.id)}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        View Chat History
-                      </button>
-                      <button
-                        onClick={() => handleViewCampaignBrief(activity.id)}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-                      >
-                        <FileText className="w-4 h-4" />
-                        View Campaign Brief
-                      </button>
+                    {/* Available Actions */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-black mb-3">Available Actions</h4>
+                      <div className="flex justify-start gap-3 flex-wrap">
+                        <button
+                          onClick={() => handleViewChatHistory(activity.id)}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 hover:border-slate-400 text-black text-sm font-medium rounded-lg border border-gray-300 transition-all duration-200"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          View Chat History
+                        </button>
+                        <button
+                          onClick={() => handleCompetitiveIntelligence(activity.id)}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 hover:border-slate-400 text-black text-sm font-medium rounded-lg border border-gray-300 transition-all duration-200"
+                        >
+                          <Search className="w-4 h-4" />
+                          Competitive Intelligence
+                        </button>
+                        <button
+                          onClick={() => handleCampaignExecution(activity.id)}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 hover:border-slate-400 text-black text-sm font-medium rounded-lg border border-gray-300 transition-all duration-200"
+                        >
+                          <Zap className="w-4 h-4" />
+                          Build Campaign
+                        </button>
+                        <button
+                          onClick={() => handleViewCampaignBrief(activity.id)}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 hover:border-slate-400 text-black text-sm font-medium rounded-lg border border-gray-300 transition-all duration-200"
+                        >
+                          <FileText className="w-4 h-4" />
+                          View Campaign Brief
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

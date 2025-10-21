@@ -1,12 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User } from 'lucide-react';
 import { JourneySidebarProps } from './types';
 
 export default function JourneySidebar({ messages, onSendMessage }: JourneySidebarProps) {
   const [inputMessage, setInputMessage] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleSendMessage = () => {
     if (inputMessage.trim()) {
@@ -23,6 +28,7 @@ export default function JourneySidebar({ messages, onSendMessage }: JourneySideb
   };
 
   const formatTime = (timestamp: Date) => {
+    if (!isMounted) return '';
     return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
       minute: '2-digit',

@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import ChatHeader from './ChatHeader';
 import ConversationArea from './ConversationArea';
+import CompetitiveResearchInterface from './CompetitiveResearchInterface';
+import CampaignExecutionInterface from './CampaignExecutionInterface';
 import { Message } from './messages/types';
 import { DEMO_CONTINUATION_MESSAGES, DEMO_ABTEST_MESSAGES } from './messages/demoData';
 import { Workflow } from './orchestration/types';
@@ -88,6 +90,15 @@ export default function ChatLayout() {
   const router = useRouter();
   const { demoFlow, isDemoMode, startDemo, stopDemo } = useDemoFlowPlayer();
 
+  // Message ID counter to ensure unique IDs
+  const messageIdCounterRef = useRef(0);
+
+  // Function to generate unique message IDs
+  const generateMessageId = () => {
+    messageIdCounterRef.current += 1;
+    return `${Date.now()}-${messageIdCounterRef.current}`;
+  };
+
   // State management
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -100,13 +111,15 @@ export default function ChatLayout() {
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [isOrchestrationExpanded, setIsOrchestrationExpanded] = useState(false);
   const [prefilledMessage, setPrefilledMessage] = useState<string>('');
+  const [isCompetitiveMode, setIsCompetitiveMode] = useState(false);
+  const [isCampaignExecutionMode, setIsCampaignExecutionMode] = useState(false);
   const processedMessageIds = useRef<Set<string>>(new Set());
   const processedParams = useRef<Set<string>>(new Set());
 
   // Handle sending new messages
   const handleSendMessage = useCallback(async (content: string) => {
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       type: 'user-text',
       content,
       sender: 'user',
@@ -120,7 +133,7 @@ export default function ChatLayout() {
       // Start the Halloween demo flow
       setTimeout(() => {
         const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
+          id: generateMessageId(),
           type: 'assistant-text',
           content: 'Great! I\'ll help you create a comprehensive campaign brief for your Halloween campaign. Let me find the right agents for you...',
           sender: 'assistant',
@@ -140,7 +153,7 @@ export default function ChatLayout() {
 
           // Add the "found agents" message
           const foundAgentsMessage: Message = {
-            id: (Date.now() + 2).toString(),
+            id: generateMessageId(),
             type: 'assistant-text',
             content: 'Perfect! I\'ve assembled your specialized marketing team. Let me gather some information to get started.',
             sender: 'assistant',
@@ -156,7 +169,7 @@ export default function ChatLayout() {
           // Continue with the question prompt after another delay
           setTimeout(() => {
             const questionMessage: Message = {
-              id: (Date.now() + 3).toString(),
+              id: generateMessageId(),
               type: 'question',
               content: '',
               sender: 'assistant',
@@ -178,13 +191,131 @@ export default function ChatLayout() {
           }, 1500);
         }, 2000);
       }, 1000);
+    } else if (isCompetitiveMode) {
+      // Handle competitive intelligence questions
+      setIsLoading(true);
+
+      setTimeout(() => {
+        // Generate different responses based on question content
+        let agentMessage: Message;
+
+        if (content.toLowerCase().includes('creative') || content.toLowerCase().includes('visual') || content.toLowerCase().includes('theme')) {
+          agentMessage = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: 'I\'ve analyzed Halloween creative strategies across major brands. Key trends include:\n\n• **Nostalgia-driven themes** - 68% of brands are incorporating 80s/90s Halloween aesthetics\n• **Interactive elements** - AR filters and gamification up 45% from last year\n• **Sustainable messaging** - 34% emphasizing eco-friendly Halloween practices\n• **Personalization** - Custom costume/décor recommendations based on user data\n\nNotable examples: Target\'s retro Halloween collection, Sephora\'s AR makeup try-on, and Whole Foods\' zero-waste Halloween guide.',
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Deep Research Agent',
+              agentColor: '#8b5cf6'
+            }
+          };
+        } else if (content.toLowerCase().includes('audience') || content.toLowerCase().includes('targeting') || content.toLowerCase().includes('demographic')) {
+          agentMessage = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: 'Competitor audience analysis reveals strategic shifts:\n\n• **Primary target**: Millennials (25-40) with 73% of ad spend allocation\n• **Growing segment**: Gen Z parents (22-30) - up 156% in targeting\n• **Geographic focus**: Suburban markets showing 23% higher engagement\n• **Income targeting**: $50K-$100K household income sweet spot\n\nKey insight: Brands are moving away from broad "Halloween enthusiasts" to specific personas like "Pinterest Halloween Moms" and "Last-minute Halloween Shoppers".',
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Competitive Intelligence Agent',
+              agentColor: '#ec4899'
+            }
+          };
+        } else if (content.toLowerCase().includes('budget') || content.toLowerCase().includes('investment') || content.toLowerCase().includes('spend')) {
+          agentMessage = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: 'Halloween campaign investment analysis:\n\n• **Average spend increase**: 28% vs last year across retail brands\n• **Budget allocation**: 45% digital, 35% traditional, 20% experiential\n• **Peak spending window**: September 15 - October 25\n• **ROI leaders**: Email marketing (4.2x), social video (3.8x), influencer partnerships (3.1x)\n\n**Whitespace opportunity**: Mid-tier brands ($25K-$75K budgets) are underinvesting in TikTok, creating openings for higher engagement rates at lower costs.',
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Whitespace Analysis Agent',
+              agentColor: '#06b6d4'
+            }
+          };
+        } else {
+          agentMessage = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: `Analyzing competitive landscape for: "${content}"\n\nI'm coordinating with our research agents to gather comprehensive intelligence. This analysis will include competitor strategies, market gaps, and actionable insights for your Halloween campaign.\n\nWhich specific aspect would you like me to focus on: creative strategies, audience targeting, channel mix, or timing & investment?`,
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Deep Research Agent',
+              agentColor: '#8b5cf6'
+            }
+          };
+        }
+
+        setMessages(prev => [...prev, agentMessage]);
+        setIsLoading(false);
+      }, 2000);
+    } else if (isCampaignExecutionMode) {
+      // Handle campaign execution questions and brief uploads
+      setIsLoading(true);
+
+      setTimeout(() => {
+        // Check for audience targeting request
+        const hasAudienceRequest =
+          (content.toLowerCase().includes('hyper-personali') && content.toLowerCase().includes('high churn')) ||
+          (content.toLowerCase().includes('target') && content.toLowerCase().includes('high churn')) ||
+          (content.toLowerCase().includes('create') && content.toLowerCase().includes('audience') && content.toLowerCase().includes('high churn')) ||
+          (content.toLowerCase().includes('segment') && content.toLowerCase().includes('high churn'));
+
+        if (hasAudienceRequest) {
+          const audienceMessage: Message = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: 'Perfect! I\'m activating the Audience & Segment Analytics Agent to analyze your high churn user segment in the United States. Let me identify the key behavioral patterns and create hyper-personalized targeting strategies.',
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Audience & Segment Analytics Agent',
+              agentColor: '#14b8a6'
+            }
+          };
+
+          setMessages(prev => [...prev, audienceMessage]);
+        } else if (content.toLowerCase().includes('build me a campaign') || content.toLowerCase().includes('create campaign')) {
+          const executionMessage: Message = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: 'Perfect! I\'ve analyzed your request and I\'m now assembling the optimal agent team to create your campaign from the brief. Let me identify the specialized agents and applications we\'ll need.',
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Marketing Super Agent',
+              agentColor: '#7c3aed'
+            }
+          };
+
+          setMessages(prev => [...prev, executionMessage]);
+        } else {
+          const defaultMessage: Message = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: `I'm analyzing your request: "${content}". To build your campaign, I'll need to reference your approved campaign brief. Please upload the brief or type "build me a campaign from this campaign brief" when you're ready to proceed.`,
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Marketing Super Agent',
+              agentColor: '#7c3aed'
+            }
+          };
+
+          setMessages(prev => [...prev, defaultMessage]);
+        }
+        setIsLoading(false);
+      }, 2000);
     } else {
       // Handle other messages normally
       setIsLoading(true);
 
       setTimeout(() => {
         const agentMessage: Message = {
-          id: (Date.now() + 1).toString(),
+          id: generateMessageId(),
           type: 'assistant-text',
           content: `Thank you for your message: "${content}". I'm analyzing this request and will coordinate with the appropriate agents to provide you with a comprehensive response. Let me break this down and get our team working on it.`,
           sender: 'assistant',
@@ -199,7 +330,7 @@ export default function ChatLayout() {
         setIsLoading(false);
       }, 2000);
     }
-  }, []);
+  }, [generateMessageId]);
 
   // Save orchestration panel state to localStorage
   useEffect(() => {
@@ -266,16 +397,61 @@ export default function ChatLayout() {
     const promptParam = searchParams.get('prompt');
     const campaignParam = searchParams.get('campaign');
     const viewParam = searchParams.get('view');
+    const modeParam = searchParams.get('mode');
 
     // Create a unique key for this parameter combination
-    const paramKey = `${demoParam || 'none'}-${promptParam || 'none'}-${campaignParam || 'none'}-${viewParam || 'none'}`;
+    const paramKey = `${demoParam || 'none'}-${promptParam || 'none'}-${campaignParam || 'none'}-${viewParam || 'none'}-${modeParam || 'none'}`;
 
     // Skip if we've already processed these parameters
     if (processedParams.current.has(paramKey)) {
       return;
     }
 
-    if (campaignParam === 'halloween-brief' && viewParam === 'complete') {
+    if (modeParam === 'competitive' && campaignParam === 'halloween-brief') {
+      // Handle competitive intelligence mode
+      processedParams.current.add(paramKey);
+      setIsCompetitiveMode(true);
+
+      // Initialize competitive intelligence messages
+      const competitiveIntroMessage: Message = {
+        id: 'competitive-intro',
+        type: 'assistant-text',
+        content: 'Welcome to Competitive Intelligence Research! I\'ve activated three specialized agents to help you analyze Halloween campaign strategies from other brands.',
+        sender: 'assistant',
+        timestamp: new Date(),
+        metadata: {
+          agentName: 'Deep Research Agent',
+          agentColor: '#8b5cf6'
+        }
+      };
+
+      setMessages([competitiveIntroMessage]);
+
+      // Clear URL parameters after processing
+      router.replace('/chat');
+    } else if (modeParam === 'execution' && campaignParam === 'halloween-brief') {
+      // Handle campaign execution mode
+      processedParams.current.add(paramKey);
+      setIsCampaignExecutionMode(true);
+
+      // Initialize campaign execution messages
+      const executionIntroMessage: Message = {
+        id: 'execution-intro',
+        type: 'assistant-text',
+        content: 'Welcome to Campaign Execution! I\'m ready to help you transform your approved campaign brief into a fully orchestrated campaign. Upload your campaign brief or reference it to get started.',
+        sender: 'assistant',
+        timestamp: new Date(),
+        metadata: {
+          agentName: 'Marketing Super Agent',
+          agentColor: '#7c3aed'
+        }
+      };
+
+      setMessages([executionIntroMessage]);
+
+      // Clear URL parameters after processing
+      router.replace('/chat');
+    } else if (campaignParam === 'halloween-brief' && viewParam === 'complete') {
       // Load the complete Halloween campaign conversation
       processedParams.current.add(paramKey);
 
@@ -346,7 +522,7 @@ export default function ChatLayout() {
 
           // Add activation message to chat
           const activationMessage: Message = {
-            id: `activation-${Date.now()}`,
+            id: generateMessageId(),
             type: 'assistant-text',
             content: activationData.message,
             sender: 'assistant',
@@ -376,7 +552,7 @@ export default function ChatLayout() {
       try {
         const activationData = JSON.parse(pendingActivation);
         const activationMessage: Message = {
-          id: `activation-${Date.now()}`,
+          id: generateMessageId(),
           type: 'assistant-text',
           content: activationData.message,
           sender: 'assistant',
@@ -433,7 +609,7 @@ export default function ChatLayout() {
     if (isActuallyABTestFlow || isHalloweenFlow) {
       // Add user response message
       const userAnswerMessage: Message = {
-        id: `user-answer-${Date.now()}`,
+        id: generateMessageId(),
         type: 'user-text',
         content: answers.join(', '),
         sender: 'user',
@@ -734,21 +910,39 @@ export default function ChatLayout() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col pt-16 overflow-hidden">
-        {/* Conversation Area - Full Width, Scrollable */}
-        <ConversationArea
-          messages={messages}
-          isLoading={isLoading}
-          onStarterPromptClick={handleSendMessage}
-          onQuestionSubmit={handleQuestionSubmit}
-          onActionClick={handleActionClick}
-          onScroll={handleScroll}
-          currentWorkflow={currentWorkflow}
-          completedAgents={completedAgents}
-          activeAgent={activeAgent}
-          onSendMessage={handleSendMessage}
-          prefilledMessage={prefilledMessage}
-          onPrefilledMessageClear={() => setPrefilledMessage('')}
-        />
+        {isCompetitiveMode ? (
+          /* Competitive Research Interface - Split View */
+          <CompetitiveResearchInterface
+            messages={messages}
+            isLoading={isLoading}
+            onSendMessage={handleSendMessage}
+            onActionClick={handleActionClick}
+          />
+        ) : isCampaignExecutionMode ? (
+          /* Campaign Execution Interface - Split View */
+          <CampaignExecutionInterface
+            messages={messages}
+            isLoading={isLoading}
+            onSendMessage={handleSendMessage}
+            onActionClick={handleActionClick}
+          />
+        ) : (
+          /* Conversation Area - Full Width, Scrollable */
+          <ConversationArea
+            messages={messages}
+            isLoading={isLoading}
+            onStarterPromptClick={handleSendMessage}
+            onQuestionSubmit={handleQuestionSubmit}
+            onActionClick={handleActionClick}
+            onScroll={handleScroll}
+            currentWorkflow={currentWorkflow}
+            completedAgents={completedAgents}
+            activeAgent={activeAgent}
+            onSendMessage={handleSendMessage}
+            prefilledMessage={prefilledMessage}
+            onPrefilledMessageClear={() => setPrefilledMessage('')}
+          />
+        )}
       </div>
 
 

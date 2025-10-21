@@ -43,6 +43,7 @@ export interface Message {
       icon?: string;
       color?: string;
     }>;
+    isABTestQuestion?: boolean;
   };
 }
 
@@ -51,6 +52,8 @@ export interface MessageBubbleProps {
   sender: 'user' | 'assistant' | 'system';
   timestamp: Date;
   children?: React.ReactNode;
+  metadata?: Message['metadata'];
+  onActionClick?: (actionLabel: string) => void;
 }
 
 export interface UserMessageProps {
