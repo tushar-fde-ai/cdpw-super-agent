@@ -93,6 +93,9 @@ export default function DocumentViewerModal({ isOpen, onClose, document: campaig
     // Close the approval panel
     setShowApprovalPanel(false);
 
+    // Store workflow data in localStorage temporarily for ChatLayout to retrieve
+    localStorage.setItem('temp-approval-workflow', JSON.stringify(workflow));
+
     // Notify parent component
     if (onActionClick) {
       onActionClick('approval-submitted');

@@ -75,6 +75,7 @@ export interface DocumentPreviewCardProps {
   description: string;
   fileType: string;
   onView: () => void;
+  onDownload: () => void;
 }
 
 export interface QuestionPromptProps {

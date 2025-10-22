@@ -116,6 +116,62 @@ export default function ChatLayout() {
   const processedMessageIds = useRef<Set<string>>(new Set());
   const processedParams = useRef<Set<string>>(new Set());
 
+  // Budget state management
+  const [campaignBudget, setCampaignBudget] = useState<string>('$50K - $100K'); // Default value
+  const [abtestBudget, setAbtestBudget] = useState<string>('$100K+'); // Default value
+
+  // Helper function to parse budget string to numeric value
+  const parseBudgetToNumber = (budgetString: string): number => {
+    // Extract numeric values from budget ranges
+    if (budgetString.includes('Under')) {
+      return 10000; // Under $10K
+    } else if (budgetString.includes('$10K - $50K')) {
+      return 30000; // Mid-point
+    } else if (budgetString.includes('$50K - $100K')) {
+      return 75000; // Mid-point
+    } else if (budgetString.includes('$100K+')) {
+      return 150000; // $150K as example
+    }
+    return 50000; // Default
+  };
+
+  // Helper function to format budget for display
+  const formatBudgetForDisplay = (budgetString: string): string => {
+    const numericBudget = parseBudgetToNumber(budgetString);
+    return `$${(numericBudget / 1000).toFixed(0)},000`;
+  };
+
+  // Helper function to generate dynamic campaign brief document
+  const generateCampaignBrief = (budgetString: string) => {
+    const totalBudget = parseBudgetToNumber(budgetString);
+    const emailBudget = (totalBudget * 0.6).toFixed(0);
+    const socialBudget = (totalBudget * 0.4).toFixed(0);
+    const revenueTarget = (totalBudget * 3).toFixed(0);
+
+    return {
+      ...sampleCampaignBrief,
+      content: [
+        {
+          id: 'exec-summary',
+          heading: 'Executive Summary',
+          content: `This Halloween 2025 campaign targets millennials aged 25-40 with spooky-themed promotions designed to drive online sales during the peak Halloween shopping season. With a strategic $${Number(totalBudget).toLocaleString()} budget allocated across email marketing and social media channels, we aim to achieve a 15% increase in October revenue compared to last year. Our data-driven approach focuses on high-engagement customer segments who have shown strong seasonal purchasing behavior, leveraging personalized messaging and exclusive Halloween offers to maximize conversion rates.`
+        },
+        {
+          id: 'objectives',
+          heading: 'Campaign Objectives',
+          content: 'Primary Goal: Drive online sales and increase October revenue by 15% year-over-year\n\nSecondary Goals:\n• Increase email list engagement by 25%\n• Grow social media following by 2,000 new followers\n• Build brand awareness among target demographic\n• Test new creative formats for future seasonal campaigns\n• Achieve customer acquisition cost under $25\n• Maintain brand consistency across all touchpoints'
+        },
+        ...sampleCampaignBrief.content.slice(2, 6), // Keep audience, strategy, tactics, and metrics sections (skip budget at index 6)
+        {
+          id: 'budget-dynamic',
+          heading: 'Budget Allocation',
+          content: `Total Campaign Budget: $${Number(totalBudget).toLocaleString()}\n\nEmail Marketing: $${Number(emailBudget).toLocaleString()} (60%)\n• Platform costs: $${(Number(emailBudget) * 0.17).toFixed(0).toLocaleString()}\n• Creative development: $${(Number(emailBudget) * 0.27).toFixed(0).toLocaleString()}\n• Automation setup: $${(Number(emailBudget) * 0.23).toFixed(0).toLocaleString()}\n• A/B testing: $${(Number(emailBudget) * 0.17).toFixed(0).toLocaleString()}\n• Analytics & reporting: $${(Number(emailBudget) * 0.17).toFixed(0).toLocaleString()}\n\nSocial Media: $${Number(socialBudget).toLocaleString()} (40%)\n• Paid advertising: $${(Number(socialBudget) * 0.6).toFixed(0).toLocaleString()}\n• Content creation: $${(Number(socialBudget) * 0.25).toFixed(0).toLocaleString()}\n• Influencer partnerships: $${(Number(socialBudget) * 0.1).toFixed(0).toLocaleString()}\n• Community management: $${(Number(socialBudget) * 0.05).toFixed(0).toLocaleString()}`
+        },
+        ...sampleCampaignBrief.content.slice(7) // Keep timeline section (index 7)
+      ]
+    };
+  };
+
   // Handle sending new messages
   const handleSendMessage = useCallback(async (content: string) => {
     const userMessage: Message = {
@@ -398,12 +454,22 @@ export default function ChatLayout() {
     const campaignParam = searchParams.get('campaign');
     const viewParam = searchParams.get('view');
     const modeParam = searchParams.get('mode');
+    const viewDocumentParam = searchParams.get('viewDocument');
 
     // Create a unique key for this parameter combination
-    const paramKey = `${demoParam || 'none'}-${promptParam || 'none'}-${campaignParam || 'none'}-${viewParam || 'none'}-${modeParam || 'none'}`;
+    const paramKey = `${demoParam || 'none'}-${promptParam || 'none'}-${campaignParam || 'none'}-${viewParam || 'none'}-${modeParam || 'none'}-${viewDocumentParam || 'none'}`;
 
     // Skip if we've already processed these parameters
     if (processedParams.current.has(paramKey)) {
+      return;
+    }
+
+    // Handle viewDocument parameter - open document viewer modal
+    if (viewDocumentParam) {
+      processedParams.current.add(paramKey);
+      setIsDocumentViewerOpen(true);
+      // Clear URL parameters after processing
+      router.replace('/chat');
       return;
     }
 
@@ -494,6 +560,36 @@ export default function ChatLayout() {
         // Clear URL parameters after processing
         router.replace('/chat');
       }
+    } else if (promptParam === 'Would you like to setup a Halloween campaign?') {
+      // Handle Halloween campaign prompt - show as assistant message with action buttons
+      processedParams.current.add(paramKey);
+
+      const halloweenPromptMessage: Message = {
+        id: 'halloween-prompt',
+        type: 'action-buttons',
+        content: 'Would you like to setup a Halloween campaign?',
+        sender: 'assistant',
+        timestamp: new Date(),
+        metadata: {
+          agentName: 'Marketing Super Agent',
+          agentColor: '#7c3aed',
+          actions: [
+            {
+              label: 'Yes, setup Halloween campaign',
+              variant: 'primary' as const,
+              action: 'halloween-campaign-yes'
+            },
+            {
+              label: 'No, something else',
+              variant: 'outline' as const,
+              action: 'halloween-campaign-no'
+            }
+          ]
+        }
+      };
+
+      setMessages([halloweenPromptMessage]);
+      router.replace('/chat');
     } else if (promptParam) {
       // Handle prompt parameter by pre-filling the input field instead of auto-sending
       processedParams.current.add(paramKey);
@@ -594,6 +690,18 @@ export default function ChatLayout() {
     const isActuallyABTestFlow = isABTestFlow || isABTestQuestion;
     const isHalloweenFlow = currentWorkflow?.id === 'campaign-brief-creation' && !isActuallyABTestFlow;
 
+    // Capture budget selection
+    const budgetAnswer = answers[0]; // First answer is the budget
+    if (isActuallyABTestFlow) {
+      // This is A/B test budget selection
+      setAbtestBudget(budgetAnswer);
+      console.log('💰 A/B Test Budget captured:', budgetAnswer);
+    } else if (isHalloweenFlow) {
+      // This is initial campaign budget selection
+      setCampaignBudget(budgetAnswer);
+      console.log('💰 Campaign Budget captured:', budgetAnswer);
+    }
+
     // Debug logging
     console.log('🔍 Question Submit Debug:', {
       demoPhase,
@@ -603,7 +711,8 @@ export default function ChatLayout() {
       isHalloweenFlow,
       currentWorkflow: currentWorkflow?.id,
       lastQuestionMessage: lastQuestionMessage?.id,
-      answers
+      answers,
+      capturedBudget: budgetAnswer
     });
 
     if (isActuallyABTestFlow || isHalloweenFlow) {
@@ -641,15 +750,49 @@ export default function ChatLayout() {
         setCompletedAgents(new Set(['campaign-strategy']));
       }
 
+      // Helper function to inject budget values into messages
+      const injectBudgetIntoMessage = (message: Message, campaignBudgetValue: string, abtestBudgetValue: string): Message => {
+        const originalBudget = parseBudgetToNumber(campaignBudgetValue);
+        const abtestBudgetNum = parseBudgetToNumber(abtestBudgetValue);
+
+        // Create a copy of the message
+        let updatedMessage = { ...message };
+
+        // Update A/B test analysis content with dynamic budgets
+        if (message.id === 'ab-4' && message.content) {
+          // Calculate dynamic ROI and metrics based on budgets
+          const originalROI = (originalBudget * 4.2).toFixed(0);
+          const abtestROI = (abtestBudgetNum * 3.8).toFixed(0);
+          const originalReach = (originalBudget * 5.5).toFixed(0);
+          const abtestReach = (abtestBudgetNum * 3.4).toFixed(0);
+          const originalCostPerConv = (originalBudget / (originalBudget * 0.024)).toFixed(0);
+          const abtestCostPerConv = (abtestBudgetNum / (abtestBudgetNum * 0.028)).toFixed(0);
+
+          updatedMessage.content = `A/B Test Analysis Complete! Here are the key performance differences between your original budget (${formatBudgetForDisplay(campaignBudgetValue)}) and the test variant (${formatBudgetForDisplay(abtestBudgetValue)}):\n\n**ROI Impact:** The higher budget offers similar returns (${(abtestBudgetNum / originalBudget * 3.8).toFixed(1)}x vs 4.2x)\n**Reach Impact:** +${((abtestBudgetNum - originalBudget) / originalBudget * 100).toFixed(0)}% more people reached\n**Budget Efficiency:** Better cost per conversion at ${formatBudgetForDisplay(abtestBudgetValue)}\n**Conversion Rate:** Higher conversion rate (2.8% vs 2.4%, +17%)`;
+        }
+
+        // Update A/B test recommendation
+        if (message.id === 'ab-5') {
+          updatedMessage.content = `**Recommendation:** ${abtestBudgetNum > originalBudget ? `The higher budget (${formatBudgetForDisplay(abtestBudgetValue)}) increases reach significantly but with slightly lower ROI. Start with your original budget (${formatBudgetForDisplay(campaignBudgetValue)}) for better returns, then scale up if performance meets targets.` : `Your original budget (${formatBudgetForDisplay(campaignBudgetValue)}) offers better ROI. The lower test budget (${formatBudgetForDisplay(abtestBudgetValue)}) is more cost-efficient but reaches fewer people.`}`;
+        }
+
+        return updatedMessage;
+      };
+
       // Continue with the appropriate demo flow
       let currentIndex = 0;
 
       const streamContinuation = () => {
         if (currentIndex < messagesToUse.length) {
-          const message = {
+          let message = {
             ...messagesToUse[currentIndex],
             timestamp: new Date()
           };
+
+          // Inject budget values into A/B test messages
+          if (isActuallyABTestFlow) {
+            message = injectBudgetIntoMessage(message, campaignBudget, abtestBudget);
+          }
 
           setMessages(prev => {
             // If the current message is a thinking indicator, remove previous thinking indicators
@@ -711,7 +854,23 @@ export default function ChatLayout() {
 
   // Handle action button clicks
   const handleActionClick = (actionLabel: string) => {
+    console.log('Action clicked:', actionLabel);
+
     switch (actionLabel) {
+      case 'halloween-campaign-yes':
+      case 'Yes, setup Halloween campaign':
+        // Start Halloween campaign flow
+        console.log('Starting Halloween campaign flow');
+        handleSendMessage('I have a Halloween themed campaign that should deploy two weeks before Halloween');
+        break;
+
+      case 'halloween-campaign-no':
+      case 'No, something else':
+        // Reset to empty state
+        console.log('User declined Halloween campaign');
+        setMessages([]);
+        break;
+
       case 'Set Up A/B Test':
         // Start A/B test flow
         console.log('🚀 Setting up A/B Test - setting demoPhase to abtest');
@@ -735,10 +894,14 @@ export default function ChatLayout() {
 
       case 'Use Recommended Strategy':
         // Handle using the recommended A/B test strategy
+        // Switch the campaign budget to use the A/B test budget (the recommended one)
+        console.log('💰 Switching campaign budget from', campaignBudget, 'to', abtestBudget);
+        setCampaignBudget(abtestBudget);
+
         const recommendedMessage: Message = {
           id: 'recommended-strategy-applied',
           type: 'assistant-text',
-          content: 'Excellent choice! I\'ve applied the recommended strategy: Subject Line B "Unlock Halloween Magic - 30% Off Inside!" will be used for your campaign. This strategy shows 23% higher open rates and should drive better engagement with your millennial audience.',
+          content: `Excellent choice! I've applied the recommended strategy with the ${abtestBudget} budget. Subject Line B "Unlock Halloween Magic - 30% Off Inside!" will be used for your campaign. This strategy shows 23% higher open rates and should drive better engagement with your millennial audience.`,
           sender: 'assistant',
           timestamp: new Date(),
           metadata: {
@@ -799,6 +962,191 @@ export default function ChatLayout() {
         setIsDocumentViewerOpen(true);
         break;
 
+      case 'Download PDF':
+        // Download the campaign brief as HTML document
+        console.log('Downloading campaign brief with budget:', campaignBudget);
+
+        // Calculate budget allocation based on selected budget
+        const totalBudget = parseBudgetToNumber(campaignBudget);
+        const emailBudget = (totalBudget * 0.3).toFixed(0);
+        const socialBudget = (totalBudget * 0.4).toFixed(0);
+        const influencerBudget = (totalBudget * 0.2).toFixed(0);
+        const creativeBudget = (totalBudget * 0.1).toFixed(0);
+
+        // Create the campaign brief content
+        const campaignBriefContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Halloween 2025 Campaign Brief</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; }
+    h1 { color: #7c3aed; border-bottom: 3px solid #7c3aed; padding-bottom: 10px; }
+    h2 { color: #4a5568; margin-top: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+    h3 { color: #2d3748; margin-top: 20px; }
+    .section { margin-bottom: 30px; }
+    .metric { background: #f7fafc; padding: 15px; margin: 10px 0; border-left: 4px solid #7c3aed; }
+    ul { line-height: 1.8; }
+    .budget-item { padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+    .highlight { background: #fef3c7; padding: 2px 5px; }
+  </style>
+</head>
+<body>
+  <h1>Halloween 2025 Campaign Brief</h1>
+
+  <div class="section">
+    <h2>Campaign Overview</h2>
+    <p><strong>Campaign Name:</strong> Halloween Magic 2025</p>
+    <p><strong>Launch Date:</strong> Two weeks before Halloween (October 17, 2025)</p>
+    <p><strong>Campaign Duration:</strong> 2 weeks</p>
+    <p><strong>Primary Objective:</strong> Drive sales and engagement through Halloween-themed promotions</p>
+  </div>
+
+  <div class="section">
+    <h2>Budget Allocation</h2>
+    <div class="budget-item"><strong>Email Marketing:</strong> $${Number(emailBudget).toLocaleString()} (30%)</div>
+    <div class="budget-item"><strong>Social Media Ads:</strong> $${Number(socialBudget).toLocaleString()} (40%)</div>
+    <div class="budget-item"><strong>Influencer Partnerships:</strong> $${Number(influencerBudget).toLocaleString()} (20%)</div>
+    <div class="budget-item"><strong>Creative & Design:</strong> $${Number(creativeBudget).toLocaleString()} (10%)</div>
+    <div class="budget-item"><strong>Total Budget:</strong> $${Number(totalBudget).toLocaleString()}</div>
+  </div>
+
+  <div class="section">
+    <h2>Target Audience Analysis</h2>
+
+    <h3>Primary Segment: Millennials (Ages 25-40)</h3>
+    <div class="metric">
+      <strong>Demographics:</strong>
+      <ul>
+        <li>Age: 25-40 years old</li>
+        <li>Income: $45,000 - $85,000</li>
+        <li>Urban/Suburban locations</li>
+        <li>Family-oriented with young children</li>
+      </ul>
+    </div>
+
+    <div class="metric">
+      <strong>Psychographics:</strong>
+      <ul>
+        <li>Value experiences and creating memories</li>
+        <li>Active on social media (Instagram, Facebook, TikTok)</li>
+        <li>Enjoy seasonal celebrations and traditions</li>
+        <li>Price-conscious but willing to spend on quality</li>
+      </ul>
+    </div>
+
+    <div class="metric">
+      <strong>Shopping Behaviors:</strong>
+      <ul>
+        <li>Plan Halloween purchases 2-3 weeks in advance</li>
+        <li>Prefer online shopping with quick delivery</li>
+        <li>Influenced by social media trends and recommendations</li>
+        <li>Average order value: $75-150</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Campaign Objectives</h2>
+    <ul>
+      <li>Increase Halloween season sales by <span class="highlight">35%</span> compared to 2024</li>
+      <li>Achieve email open rate of <span class="highlight">32%+</span></li>
+      <li>Generate <span class="highlight">10,000+</span> social media engagements</li>
+      <li>Acquire <span class="highlight">2,500+</span> new customers</li>
+      <li>Maintain customer satisfaction score above <span class="highlight">4.5/5</span></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Recommended Tactics</h2>
+
+    <h3>Email Marketing</h3>
+    <ul>
+      <li><strong>Subject Line:</strong> "Unlock Halloween Magic - 30% Off Inside!"</li>
+      <li>3-email sequence: Teaser, Main Offer, Last Chance</li>
+      <li>Personalized product recommendations based on browsing history</li>
+      <li>Mobile-optimized design with Halloween theme</li>
+    </ul>
+
+    <h3>Social Media Strategy</h3>
+    <ul>
+      <li>Daily Halloween countdown posts (Instagram & TikTok)</li>
+      <li>User-generated content campaign with hashtag #HalloweenMagic2025</li>
+      <li>Instagram Stories with interactive polls and quizzes</li>
+      <li>Influencer partnerships featuring product styling ideas</li>
+    </ul>
+
+    <h3>Promotional Offers</h3>
+    <ul>
+      <li>30% off Halloween-themed products</li>
+      <li>Bundle deals: Buy 2, Get 1 Free on select items</li>
+      <li>Free shipping on orders over $50</li>
+      <li>Early bird special: Extra 10% off for first 48 hours</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Key Performance Indicators (KPIs)</h2>
+    <div class="metric">
+      <ul>
+        <li>Email Open Rate: Target 32%+</li>
+        <li>Click-Through Rate: Target 4.5%+</li>
+        <li>Conversion Rate: Target 3.2%+</li>
+        <li>Social Media Engagement: 10,000+ interactions</li>
+        <li>Revenue: $175,000+ from campaign</li>
+        <li>ROI: 3.5x minimum</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Timeline & Milestones</h2>
+    <ul>
+      <li><strong>Week 1 (Oct 17-23):</strong> Campaign launch, initial email blast, social media kickoff</li>
+      <li><strong>Week 2 (Oct 24-30):</strong> Reminder emails, intensified social ads, final push</li>
+      <li><strong>Halloween Day (Oct 31):</strong> Last chance emails, flash sale announcements</li>
+      <li><strong>Post-Campaign (Nov 1-7):</strong> Thank you emails, feedback collection, performance analysis</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <p style="color: #718096; font-size: 14px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+      <strong>Document Generated:</strong> ${new Date().toLocaleDateString()} |
+      <strong>Campaign Strategy Agent</strong> |
+      Marketing Super Agent Platform
+    </p>
+  </div>
+</body>
+</html>
+        `;
+
+        // Create blob and download
+        const blob = new Blob([campaignBriefContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = 'Halloween_2025_Campaign_Brief.html';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(url);
+
+        // Show a confirmation message
+        const downloadConfirmation: Message = {
+          id: `download-confirmation-${Date.now()}`,
+          type: 'assistant-text',
+          content: 'Campaign brief downloaded successfully! You can open the HTML file in any browser or convert it to PDF.',
+          sender: 'assistant',
+          timestamp: new Date(),
+          metadata: {
+            agentName: 'Campaign Strategy Agent',
+            agentColor: '#7c3aed'
+          }
+        };
+        setMessages(prev => [...prev, downloadConfirmation]);
+        break;
+
       case 'Set Up Approval Workflow':
         // Open document viewer to set up approval workflow
         setIsDocumentViewerOpen(true);
@@ -806,15 +1154,75 @@ export default function ChatLayout() {
 
       case 'approval-submitted':
         // Handle approval workflow submission
+        // Retrieve workflow data from localStorage
+        const workflowDataStr = localStorage.getItem('temp-approval-workflow');
+        if (!workflowDataStr) {
+          console.error('No workflow data found');
+          return;
+        }
+
+        const workflowData = JSON.parse(workflowDataStr);
+
+        // Clean up temporary storage
+        localStorage.removeItem('temp-approval-workflow');
+
+        // Generate unique approval ID
+        const approvalId = `approval-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Map workflow approvers to approval request format
+        const approvers = workflowData.approvers.map((approver: any) => ({
+          id: approver.id,
+          name: approver.name,
+          email: approver.email,
+          title: approver.title,
+          status: 'pending' as const
+        }));
+
+        // Create approval request object
+        const approvalRequest = {
+          id: approvalId,
+          documentId: 'halloween-2025-brief',
+          documentTitle: 'Halloween 2025 Campaign Brief',
+          campaignBudget: campaignBudget,
+          requestedBy: 'Marketing Team',
+          requestedAt: new Date(),
+          dueDate: workflowData.dueDate ? new Date(workflowData.dueDate) : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+          approvers: approvers,
+          comments: workflowData.comments || 'Please review and approve the Halloween 2025 campaign brief. Budget has been set based on initial requirements.',
+          status: 'pending' as const
+        };
+
+        // Save to localStorage
+        localStorage.setItem(`approval-${approvalId}`, JSON.stringify(approvalRequest));
+
+        // Generate shareable approval link
+        const approvalLink = `${window.location.origin}/approvals/${approvalId}`;
+
+        // Generate dynamic approval message based on selected approvers
+        const approverNames = approvers.map((a: any) => `${a.name} (${a.title})`).join(', ');
+        const approverCount = approvers.length;
+
         const approvalMessage: Message = {
           id: 'approval-confirmation',
           type: 'assistant-text',
-          content: 'Approval workflow has been sent to Sarah Chen (CMO) and Mike Johnson (Marketing Lead). They will receive email notifications and can review the document within the next 3 days.',
+          content: `Approval workflow has been sent to ${approverNames}. ${approverCount > 1 ? 'They' : 'They'} will receive email notifications and can review the document within the next ${workflowData.dueDate ? Math.ceil((new Date(workflowData.dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 3} days.`,
           sender: 'assistant',
           timestamp: new Date(),
           metadata: {
             agentName: 'Campaign Strategy Agent',
-            agentColor: '#7c3aed'
+            agentColor: '#7c3aed',
+            actions: [
+              {
+                label: `Open Approval Portal`,
+                variant: 'primary' as const,
+                action: `open-approval-${approvalId}`
+              },
+              {
+                label: 'Copy Approval Link',
+                variant: 'outline' as const,
+                action: `copy-approval-${approvalId}`
+              }
+            ]
           }
         };
 
@@ -891,7 +1299,37 @@ export default function ChatLayout() {
         break;
 
       default:
-        console.log('Unhandled action:', actionLabel);
+        // Handle dynamic approval actions
+        if (actionLabel.startsWith('open-approval-')) {
+          const approvalId = actionLabel.replace('open-approval-', '');
+          const approvalLink = `${window.location.origin}/approvals/${approvalId}`;
+          window.open(approvalLink, '_blank');
+        } else if (actionLabel.startsWith('copy-approval-')) {
+          const approvalId = actionLabel.replace('copy-approval-', '');
+          const approvalLink = `${window.location.origin}/approvals/${approvalId}`;
+
+          // Copy to clipboard
+          navigator.clipboard.writeText(approvalLink).then(() => {
+            // Show success message
+            const copyMessage: Message = {
+              id: `copy-success-${Date.now()}`,
+              type: 'assistant-text',
+              content: '✓ Approval link copied to clipboard! You can now paste and share it with approvers.',
+              sender: 'assistant',
+              timestamp: new Date(),
+              metadata: {
+                agentName: 'Campaign Strategy Agent',
+                agentColor: '#7c3aed'
+              }
+            };
+            setMessages(prev => [...prev, copyMessage]);
+          }).catch(err => {
+            console.error('Failed to copy:', err);
+            alert('Failed to copy link to clipboard');
+          });
+        } else {
+          console.log('Unhandled action:', actionLabel);
+        }
     }
   };
 
@@ -941,6 +1379,8 @@ export default function ChatLayout() {
             onSendMessage={handleSendMessage}
             prefilledMessage={prefilledMessage}
             onPrefilledMessageClear={() => setPrefilledMessage('')}
+            campaignBudget={campaignBudget}
+            abtestBudget={abtestBudget}
           />
         )}
       </div>
@@ -950,7 +1390,7 @@ export default function ChatLayout() {
       <DocumentViewerModal
         isOpen={isDocumentViewerOpen}
         onClose={handleDocumentViewerClose}
-        document={sampleCampaignBrief}
+        document={generateCampaignBrief(campaignBudget)}
         onActionClick={handleActionClick}
       />
 

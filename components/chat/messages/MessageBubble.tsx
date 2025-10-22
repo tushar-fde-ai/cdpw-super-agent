@@ -17,7 +17,7 @@ export default function MessageBubble({ content, sender, timestamp, children }: 
       <div className={`flex ${isUser ? 'flex-row-reverse' : 'flex-row'} items-end space-x-2 max-w-[70%]`}>
         {/* Avatar for Assistant */}
         {!isUser && (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mb-1 flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center mb-1 flex-shrink-0">
             <Bot size={16} className="text-white" />
           </div>
         )}
@@ -27,7 +27,7 @@ export default function MessageBubble({ content, sender, timestamp, children }: 
           className={`
             relative px-5 py-4 rounded-2xl shadow-lg
             ${isUser
-              ? 'bg-blue-600 text-white rounded-br-md'
+              ? 'bg-slate-700 text-white rounded-br-md'
               : 'bg-gray-100 text-black rounded-bl-md'
             }
           `}

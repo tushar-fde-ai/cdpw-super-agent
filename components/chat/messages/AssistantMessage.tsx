@@ -59,6 +59,7 @@ export default function AssistantMessage({ message, onActionClick }: AssistantMe
             description={message.metadata.documentData.description}
             fileType={message.metadata.documentData.fileType}
             onView={() => onActionClick?.('View PDF') || console.log('Review document')}
+            onDownload={() => onActionClick?.('Download PDF') || console.log('Download document')}
           />
         </div>
       )}

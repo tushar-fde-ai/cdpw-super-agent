@@ -1,14 +1,15 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { FileText, Eye } from 'lucide-react';
+import { FileText, Eye, Download } from 'lucide-react';
 import { DocumentPreviewCardProps } from './types';
 
 export default function DocumentPreviewCard({
   title,
   description,
   fileType,
-  onView
+  onView,
+  onDownload
 }: DocumentPreviewCardProps) {
   return (
     <motion.div
@@ -45,16 +46,26 @@ export default function DocumentPreviewCard({
           </div>
         </div>
 
-        {/* Action Button */}
-        <div className="flex items-center mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+        {/* Action Buttons */}
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
           <motion.button
             onClick={onView}
-            className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors duration-200"
+            className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors duration-200"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <Eye size={14} />
             <span>Review Document</span>
+          </motion.button>
+
+          <motion.button
+            onClick={onDownload}
+            className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-white bg-slate-700 hover:bg-slate-800 rounded-md transition-colors duration-200 shadow-sm"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Download size={14} />
+            <span>Download</span>
           </motion.button>
         </div>
       </div>

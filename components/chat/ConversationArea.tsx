@@ -45,6 +45,8 @@ interface ConversationAreaProps {
   onSendMessage?: (message: string) => void;
   prefilledMessage?: string;
   onPrefilledMessageClear?: () => void;
+  campaignBudget?: string;
+  abtestBudget?: string;
 }
 
 const STARTER_PROMPTS = [
@@ -68,7 +70,9 @@ export default function ConversationArea({
   activeAgent,
   onSendMessage,
   prefilledMessage,
-  onPrefilledMessageClear
+  onPrefilledMessageClear,
+  campaignBudget = '$50K - $100K',
+  abtestBudget: propAbtestBudget = '$100K+'
 }: ConversationAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -354,9 +358,42 @@ export default function ConversationArea({
     );
   };
 
-  const currentBudget = getBudgetInfo();
-  const budgetBreakdown = calculateBudgetBreakdown(currentBudget);
-  const abtestBudget = getABTestBudget();
+  // Helper function to parse budget to number
+  const parseBudgetToNumber = (budgetString: string): number => {
+    if (budgetString.includes('Under')) return 10000;
+    else if (budgetString.includes('$10K - $50K')) return 30000;
+    else if (budgetString.includes('$50K - $100K')) return 75000;
+    else if (budgetString.includes('$100K+')) return 150000;
+    return 50000;
+  };
+
+  // Calculate dynamic A/B test metrics based on budgets
+  const calculateABMetrics = () => {
+    const originalBudgetNum = parseBudgetToNumber(campaignBudget);
+    const testBudgetNum = parseBudgetToNumber(propAbtestBudget);
+
+    return {
+      original: {
+        roi: '4.2x',
+        reach: `${(originalBudgetNum * 5.5 / 1000).toFixed(0)}K people`,
+        costPerConv: `$${(originalBudgetNum / (originalBudgetNum * 0.024)).toFixed(0)}`,
+        conversionRate: '2.4%'
+      },
+      test: {
+        roi: '3.8x',
+        reach: `${(testBudgetNum * 3.4 / 1000).toFixed(0)}K people`,
+        reachChange: `${(((testBudgetNum - originalBudgetNum) / originalBudgetNum) * 100).toFixed(0)}%`,
+        costPerConv: `$${(testBudgetNum / (testBudgetNum * 0.028)).toFixed(0)}`,
+        costChange: `${(((testBudgetNum / (testBudgetNum * 0.028) - originalBudgetNum / (originalBudgetNum * 0.024)) / (originalBudgetNum / (originalBudgetNum * 0.024))) * 100).toFixed(0)}%`,
+        conversionRate: '2.8%'
+      }
+    };
+  };
+
+  // Use the campaign budget prop directly instead of parsing from messages
+  const budgetBreakdown = calculateBudgetBreakdown(campaignBudget);
+  const abtestBudget = propAbtestBudget;
+  const abMetrics = calculateABMetrics();
 
   // Messages view
   return (
@@ -1043,17 +1080,15 @@ export default function ConversationArea({
                             <h5 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
                               <BarChart3 size={14} />
                               Original Budget
-                              {budgetBreakdown && (
-                                <span className="ml-2 text-xs bg-blue-700 text-white px-2 py-1 rounded">
-                                  {budgetBreakdown.totalBudget}
-                                </span>
-                              )}
+                              <span className="ml-2 text-xs bg-blue-700 text-white px-2 py-1 rounded">
+                                {campaignBudget}
+                              </span>
                             </h5>
                             <div className="text-sm space-y-1 text-black">
-                              <p className="text-black"><strong>ROI:</strong> 4.2x</p>
-                              <p className="text-black"><strong>Reach:</strong> 410K people</p>
-                              <p className="text-black"><strong>Cost per Conversion:</strong> $31</p>
-                              <p className="text-black"><strong>Conversion Rate:</strong> 2.4%</p>
+                              <p className="text-black"><strong>ROI:</strong> {abMetrics.original.roi}</p>
+                              <p className="text-black"><strong>Reach:</strong> {abMetrics.original.reach}</p>
+                              <p className="text-black"><strong>Cost per Conversion:</strong> {abMetrics.original.costPerConv}</p>
+                              <p className="text-black"><strong>Conversion Rate:</strong> {abMetrics.original.conversionRate}</p>
                             </div>
                           </div>
 
@@ -1061,17 +1096,15 @@ export default function ConversationArea({
                             <h5 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
                               <TrendingUp size={14} />
                               A/B Test Budget
-                              {abtestBudget && (
-                                <span className="ml-2 text-xs bg-green-700 text-white px-2 py-1 rounded">
-                                  {abtestBudget}
-                                </span>
-                              )}
+                              <span className="ml-2 text-xs bg-green-700 text-white px-2 py-1 rounded">
+                                {abtestBudget}
+                              </span>
                             </h5>
                             <div className="text-sm space-y-1 text-black">
-                              <p className="text-black"><strong>ROI:</strong> 3.8x <span className="text-red-600">(-9%)</span></p>
-                              <p className="text-black"><strong>Reach:</strong> 508K people <span className="text-green-600">(+24%)</span></p>
-                              <p className="text-black"><strong>Cost per Conversion:</strong> $23 <span className="text-green-600">(-26%)</span></p>
-                              <p className="text-black"><strong>Conversion Rate:</strong> 2.8% <span className="text-green-600">(+17%)</span></p>
+                              <p className="text-black"><strong>ROI:</strong> {abMetrics.test.roi} <span className="text-red-600">(-9%)</span></p>
+                              <p className="text-black"><strong>Reach:</strong> {abMetrics.test.reach} <span className={Number(abMetrics.test.reachChange) > 0 ? "text-green-600" : "text-red-600"}>({Number(abMetrics.test.reachChange) > 0 ? '+' : ''}{abMetrics.test.reachChange})</span></p>
+                              <p className="text-black"><strong>Cost per Conversion:</strong> {abMetrics.test.costPerConv} <span className={Number(abMetrics.test.costChange) < 0 ? "text-green-600" : "text-red-600"}>({abMetrics.test.costChange}%)</span></p>
+                              <p className="text-black"><strong>Conversion Rate:</strong> {abMetrics.test.conversionRate} <span className="text-green-600">(+17%)</span></p>
                             </div>
                           </div>
                         </div>

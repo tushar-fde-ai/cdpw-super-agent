@@ -47,14 +47,14 @@ export default function OrchestrationPanel({ isExpanded, onToggle, activeWorkflo
   if (!isExpanded) {
     return (
       <motion.div
-        className="border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900"
+        className="border-b border-gray-200 dark:border-gray-700 bg-slate-50 dark:from-gray-800 dark:to-gray-900"
         initial={false}
         animate={{ height: '44px' }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
         <motion.button
           onClick={onToggle}
-          className="w-full h-11 flex items-center justify-between px-6 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+          className="w-full h-11 flex items-center justify-between px-6 hover:bg-slate-100 dark:hover:bg-gray-800 transition-colors duration-200"
           whileHover={{ backgroundColor: 'rgba(0, 0, 0, 0.02)' }}
           aria-label="Show orchestration panel"
         >
@@ -108,7 +108,7 @@ export default function OrchestrationPanel({ isExpanded, onToggle, activeWorkflo
   // Expanded state
   return (
     <motion.div
-      className="border-b border-gray-200 dark:border-gray-700 bg-gradient-to-br from-purple-50 via-blue-50 to-teal-50 dark:from-purple-900/20 dark:via-blue-900/20 dark:to-teal-900/20"
+      className="border-b border-gray-200 dark:border-gray-700 bg-slate-50 dark:from-purple-900/20 dark:via-blue-900/20 dark:to-teal-900/20"
       initial={false}
       animate={{ height: 'auto' }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
@@ -122,14 +122,14 @@ export default function OrchestrationPanel({ isExpanded, onToggle, activeWorkflo
 
         <div className="flex items-center space-x-3">
           {/* Step Counter Badge */}
-          <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2.5 py-1 rounded-full text-xs font-medium">
+          <div className="bg-slate-100 dark:bg-purple-900/30 text-slate-700 dark:text-purple-300 px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200">
             Step {currentWorkflow.currentStep} of {currentWorkflow.totalSteps}
           </div>
 
           {/* Hide Button */}
           <motion.button
             onClick={onToggle}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 text-xs font-medium text-gray-600 dark:text-gray-400"
+            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg hover:bg-slate-200 dark:hover:bg-gray-700 transition-colors duration-200 text-xs font-medium text-gray-600 dark:text-gray-400"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             aria-label="Hide orchestration panel"

@@ -7,13 +7,13 @@ export default function ActionButtons({ actions }: ActionButtonsProps) {
   const getButtonStyles = (variant: 'primary' | 'secondary' | 'outline') => {
     switch (variant) {
       case 'primary':
-        return 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg';
+        return 'bg-slate-700 hover:bg-slate-800 text-white shadow-md hover:shadow-lg';
       case 'secondary':
-        return 'bg-gray-600 hover:bg-gray-700 text-white shadow-md hover:shadow-lg';
+        return 'bg-slate-600 hover:bg-slate-700 text-white shadow-md hover:shadow-lg';
       case 'outline':
-        return 'border border-gray-300 hover:bg-gray-50 text-gray-800 hover:text-gray-900';
+        return 'border border-gray-300 hover:bg-slate-50 text-gray-800 hover:text-gray-900';
       default:
-        return 'bg-gray-600 hover:bg-gray-700 text-white shadow-md hover:shadow-lg';
+        return 'bg-slate-600 hover:bg-slate-700 text-white shadow-md hover:shadow-lg';
     }
   };
 

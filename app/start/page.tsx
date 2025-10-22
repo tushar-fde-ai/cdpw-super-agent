@@ -12,6 +12,8 @@ export default function StartPage() {
   const router = useRouter();
   const [hasRunningActivities, setHasRunningActivities] = useState(false);
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [campaignInput, setCampaignInput] = useState('');
+  const [campaignStatus, setCampaignStatus] = useState<'pending_approval' | 'approved' | 'rejected'>('pending_approval');
 
   // Check localStorage on component mount to restore campaign state if user has created campaigns
   useEffect(() => {
@@ -19,14 +21,50 @@ export default function StartPage() {
     if (savedCampaignState === 'true') {
       setHasRunningActivities(true);
     }
+
+    // Check for approval status
+    const approvalStatus = localStorage.getItem('campaign-approval-status');
+    if (approvalStatus) {
+      try {
+        const statusData = JSON.parse(approvalStatus);
+        if (statusData.status === 'approved') {
+          setCampaignStatus('approved');
+        } else if (statusData.status === 'rejected') {
+          setCampaignStatus('rejected');
+        }
+      } catch (error) {
+        console.error('Error parsing approval status:', error);
+      }
+    }
   }, []);
+
+  // Poll for approval status changes every 2 seconds when on this page
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const approvalStatus = localStorage.getItem('campaign-approval-status');
+      if (approvalStatus) {
+        try {
+          const statusData = JSON.parse(approvalStatus);
+          if (statusData.status === 'approved' && campaignStatus !== 'approved') {
+            setCampaignStatus('approved');
+          } else if (statusData.status === 'rejected' && campaignStatus !== 'rejected') {
+            setCampaignStatus('rejected');
+          }
+        } catch (error) {
+          console.error('Error parsing approval status:', error);
+        }
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [campaignStatus]);
 
   // Mock data for running activities - in a real app this would come from state management or API
   const runningActivities = [
     {
       id: 1,
       name: 'Halloween 2025 Campaign',
-      status: 'pending_approval',
+      status: campaignStatus,
       agents: ['Campaign Strategy Agent', 'Audience & Persona Agent', 'Data Analytics Agent'],
       timestamp: new Date(Date.now() - 1200000), // 20 minutes ago
       budget: '$50K - $100K',
@@ -73,6 +111,20 @@ export default function StartPage() {
 
   const handleDocumentViewerClose = () => {
     setIsDocumentViewerOpen(false);
+  };
+
+  const handleCampaignInputSubmit = () => {
+    if (campaignInput.trim()) {
+      // Navigate to chat page with Halloween campaign prompt
+      router.push('/chat?prompt=Would you like to setup a Halloween campaign?');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleCampaignInputSubmit();
+    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -140,13 +192,16 @@ export default function StartPage() {
         >
           <div className="relative">
             <textarea
+              value={campaignInput}
+              onChange={(e) => setCampaignInput(e.target.value)}
+              onKeyDown={handleKeyPress}
               placeholder="Describe your campaign goals, budget, target audience, and timeline..."
               className="w-full p-4 pr-12 border-2 rounded-xl focus:outline-none focus:ring-0 resize-none bg-white text-black placeholder-gray-500 animate-gradient-border"
               rows={3}
             />
             <button
               className="absolute right-3 top-3 p-2 text-gray-400 hover:text-black transition-colors"
-              onClick={() => router.push('/chat')}
+              onClick={handleCampaignInputSubmit}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
