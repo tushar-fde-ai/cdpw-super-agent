@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, FileText } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import { DocumentViewerModalProps, ApprovalWorkflow } from './types';
 import DocumentContent from './DocumentContent';
 import DocumentSidebar from './DocumentSidebar';
@@ -65,10 +66,85 @@ export default function DocumentViewerModal({ isOpen, onClose, document: campaig
         });
         break;
 
-      case 'print':
-        // Open print dialog
-        window.print();
-        if (onActionClick) onActionClick('print');
+      case 'download':
+        // Generate PDF directly
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 20;
+        const maxWidth = pageWidth - (margin * 2);
+        let yPosition = margin;
+
+        // Helper function to add text with line breaks
+        const addText = (text: string, fontSize: number, isBold: boolean = false, color: number[] = [0, 0, 0]) => {
+          pdf.setFontSize(fontSize);
+          pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+          pdf.setTextColor(color[0], color[1], color[2]);
+
+          const lines = pdf.splitTextToSize(text, maxWidth);
+          lines.forEach((line: string) => {
+            if (yPosition > pageHeight - margin) {
+              pdf.addPage();
+              yPosition = margin;
+            }
+            pdf.text(line, margin, yPosition);
+            yPosition += fontSize * 0.5;
+          });
+        };
+
+        // Title
+        addText(campaignDocument.title, 18, true, [124, 58, 237]);
+        yPosition += 5;
+
+        // Add a line under title
+        pdf.setDrawColor(124, 58, 237);
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += 10;
+
+        // Content sections
+        campaignDocument.content.forEach((section, index) => {
+          // Section heading
+          if (yPosition > pageHeight - margin - 20) {
+            pdf.addPage();
+            yPosition = margin;
+          }
+          addText(section.heading, 14, true, [74, 85, 104]);
+          yPosition += 3;
+
+          // Add line under heading
+          pdf.setDrawColor(226, 232, 240);
+          pdf.setLineWidth(0.3);
+          pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+          yPosition += 5;
+
+          // Section content
+          addText(section.content, 10, false, [51, 51, 51]);
+          yPosition += 8;
+        });
+
+        // Footer
+        if (yPosition > pageHeight - margin - 20) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+        yPosition += 5;
+        pdf.setDrawColor(226, 232, 240);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+        yPosition += 5;
+
+        const footerText = `Document Generated: ${new Date(campaignDocument.createdAt).toLocaleDateString()} | Marketing Super Agent Platform`;
+        addText(footerText, 8, false, [113, 128, 150]);
+
+        // Save the PDF
+        pdf.save(`${campaignDocument.title.replace(/\s+/g, '_')}.pdf`);
+        if (onActionClick) onActionClick('download');
         break;
 
       case 'setup-approval':

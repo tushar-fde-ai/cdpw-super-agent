@@ -6,12 +6,15 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { DocumentViewerModal } from '../../components/chat/document-viewer';
 import { sampleCampaignBrief } from '../../components/chat/document-viewer/sampleData';
+import TaskDetailModal from '../../components/start/TaskDetailModal';
 import { Rocket, Target, BarChart3, Sparkles, Lightbulb, Bot, Link, Clock, CheckCircle, AlertCircle, Users, FileText, Calendar, MessageCircle, Search, Zap, Palette, User, Layout, Database, PenTool, Type, BrainCircuit, Share2, Monitor } from 'lucide-react';
 
 export default function StartPage() {
   const router = useRouter();
   const [hasRunningActivities, setHasRunningActivities] = useState(false);
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
   const [campaignInput, setCampaignInput] = useState('');
   const [campaignStatus, setCampaignStatus] = useState<'pending_approval' | 'approved' | 'rejected'>('pending_approval');
 
@@ -78,7 +81,7 @@ export default function StartPage() {
     router.push(`/chat?prompt=${encodeURIComponent(promptText)}`);
   };
 
-  const handleTaskClick = (action: string) => {
+  const handleQuickStartClick = (action: string) => {
     if (action === 'halloween-campaign') {
       setHasRunningActivities(true); // Show running activities after starting campaign
       localStorage.setItem('msa_has_campaigns', 'true'); // Persist campaign state
@@ -105,12 +108,50 @@ export default function StartPage() {
   };
 
   const handleCampaignExecution = (campaignId: number) => {
+    // Check if campaign is approved before allowing execution
+    if (campaignStatus !== 'approved') {
+      alert('Campaign execution requires approval. Please ensure the campaign brief is approved before proceeding.');
+      return;
+    }
     // Navigate to campaign execution interface
     router.push('/chat?mode=execution&campaign=halloween-brief');
   };
 
   const handleDocumentViewerClose = () => {
     setIsDocumentViewerOpen(false);
+  };
+
+  const handleTaskClick = (task: any) => {
+    setSelectedTask(task);
+    setIsTaskDetailOpen(true);
+  };
+
+  const handleTaskDetailClose = () => {
+    setIsTaskDetailOpen(false);
+    setSelectedTask(null);
+  };
+
+  const handleTaskAction = (taskId: number, action: string) => {
+    // Close the modal first
+    setIsTaskDetailOpen(false);
+
+    // Then handle the action
+    switch (action) {
+      case 'view-chat':
+        handleViewChatHistory(taskId);
+        break;
+      case 'competitive-intelligence':
+        handleCompetitiveIntelligence(taskId);
+        break;
+      case 'build-campaign':
+        handleCampaignExecution(taskId);
+        break;
+      case 'view-brief':
+        handleViewCampaignBrief(taskId);
+        break;
+      default:
+        console.log('Unknown action:', action);
+    }
   };
 
   const handleCampaignInputSubmit = () => {
@@ -167,18 +208,41 @@ export default function StartPage() {
   return (
     <div className="min-h-screen bg-white p-8 pt-16">
       <div className="max-w-6xl mx-auto">
+        {/* Logo Header */}
+        <motion.div
+          className="mb-8 pb-6 border-b border-gray-200"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex items-center justify-center gap-4">
+            <div className="relative w-16 h-16">
+              <Image
+                src="/logos/td-icon.png"
+                alt="TD Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+            <h1 className="text-3xl font-semibold text-black tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+              Marketing Super Agent
+            </h1>
+          </div>
+        </motion.div>
+
         {/* Welcome Header */}
         <motion.div
-          className="text-center mb-12 mt-8"
+          className="text-center mb-12"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
         >
-          <h1 className="text-3xl font-bold text-black mb-2 flex items-center justify-center gap-3">
+          <h2 className="text-3xl font-semibold text-black mb-2 flex items-center justify-center gap-3 tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
             Hey Kate! Let&apos;s launch something amazing
             <Rocket className="w-8 h-8 text-slate-700" />
-          </h1>
-          <p className="text-gray-600">
+          </h2>
+          <p className="text-gray-600 text-base" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
             Time to orchestrate campaigns that deliver results and drive engagement.
           </p>
         </motion.div>
@@ -259,7 +323,7 @@ export default function StartPage() {
                   <button
                     key={task.id}
                     className="p-4 bg-gray-50 border border-gray-200 rounded-lg hover:border-slate-400 hover:shadow-md transition-all duration-200 text-left"
-                    onClick={() => handleTaskClick(task.action)}
+                    onClick={() => handleQuickStartClick(task.action)}
                   >
                     <div className="flex items-center space-x-2">
                       <IconComponent className="w-5 h-5 text-slate-700" />
@@ -359,107 +423,76 @@ export default function StartPage() {
                 Task Manager
               </h3>
 
-              <div className="space-y-4">
-                {runningActivities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="bg-gray-50 rounded-lg p-4 border border-gray-100"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h4 className="text-base font-semibold text-black mb-1">
-                          {activity.name}
-                        </h4>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {activity.description}
-                        </p>
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Campaign</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Planning</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Approval Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Execution</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {runningActivities.map((activity) => (
+                      <tr
+                        key={activity.id}
+                        onClick={() => handleTaskClick(activity)}
+                        className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                        {/* Campaign Name */}
+                        <td className="py-4 px-4">
+                          <div>
+                            <p className="text-sm font-medium text-black">{activity.name}</p>
+                            <p className="text-xs text-gray-600 mt-1">{activity.description}</p>
+                          </div>
+                        </td>
 
-                        {/* Status and Timestamp */}
-                        <div className="flex items-center gap-4 mb-3">
+                        {/* Planning Stage */}
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4 text-emerald-600" />
+                            <span className="text-sm text-gray-800">Complete</span>
+                          </div>
+                        </td>
+
+                        {/* Approval Status */}
+                        <td className="py-4 px-4">
                           <div className="flex items-center gap-1">
                             {getStatusIcon(activity.status)}
-                            <span className="text-sm font-medium text-gray-800">
+                            <span className="text-sm text-gray-800">
                               {getStatusText(activity.status)}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-gray-600">
-                            <Calendar className="w-4 h-4" />
-                            <span className="text-sm">
-                              {formatTimeAgo(activity.timestamp)}
-                            </span>
-                          </div>
-                        </div>
+                        </td>
 
-                        {/* Campaign Details */}
-                        <div className="grid grid-cols-2 gap-4 mb-3">
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-black" />
-                            <span className="text-sm text-gray-800">
-                              <span className="font-medium">Target:</span> {activity.targetAudience}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Target className="w-4 h-4 text-black" />
-                            <span className="text-sm text-gray-800">
-                              <span className="font-medium">Budget:</span> {activity.budget}
-                            </span>
-                          </div>
-                        </div>
+                        {/* Execution Stage */}
+                        <td className="py-4 px-4">
+                          {activity.status === 'approved' ? (
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm text-gray-600">Not Started</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1" title="Requires approval">
+                              <AlertCircle className="w-4 h-4 text-amber-500" />
+                              <span className="text-sm text-amber-600">Blocked</span>
+                            </div>
+                          )}
+                        </td>
 
-                        {/* Agents Used */}
-                        <div className="mb-3">
-                          <p className="text-sm font-medium text-gray-800 mb-2">Agents Used:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {activity.agents.map((agent, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-black border border-gray-300"
-                              >
-                                <Bot className="w-3 h-3 mr-1" />
-                                {agent}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Available Actions */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-black mb-3">Available Actions</h4>
-                      <div className="flex justify-start gap-3 flex-wrap">
-                        <button
-                          onClick={() => handleViewChatHistory(activity.id)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 hover:border-slate-400 text-black text-sm font-medium rounded-lg border border-gray-300 transition-all duration-200"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                          View Chat History
-                        </button>
-                        <button
-                          onClick={() => handleCompetitiveIntelligence(activity.id)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 hover:border-slate-400 text-black text-sm font-medium rounded-lg border border-gray-300 transition-all duration-200"
-                        >
-                          <Search className="w-4 h-4" />
-                          Competitive Intelligence
-                        </button>
-                        <button
-                          onClick={() => handleCampaignExecution(activity.id)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 hover:border-slate-400 text-black text-sm font-medium rounded-lg border border-gray-300 transition-all duration-200"
-                        >
-                          <Zap className="w-4 h-4" />
-                          Build Campaign
-                        </button>
-                        <button
-                          onClick={() => handleViewCampaignBrief(activity.id)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 hover:border-slate-400 text-black text-sm font-medium rounded-lg border border-gray-300 transition-all duration-200"
-                        >
-                          <FileText className="w-4 h-4" />
-                          View Campaign Brief
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                        {/* Created Timestamp */}
+                        <td className="py-4 px-4">
+                          <span className="text-sm text-gray-600">
+                            {formatTimeAgo(activity.timestamp)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </motion.div>
@@ -472,6 +505,15 @@ export default function StartPage() {
         onClose={handleDocumentViewerClose}
         document={sampleCampaignBrief}
         onActionClick={() => {}} // No actions needed from the start page modal
+      />
+
+      {/* Task Detail Modal */}
+      <TaskDetailModal
+        isOpen={isTaskDetailOpen}
+        onClose={handleTaskDetailClose}
+        task={selectedTask}
+        onActionClick={handleTaskAction}
+        isApproved={campaignStatus === 'approved'}
       />
     </div>
   );

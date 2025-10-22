@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Share2, Printer, Settings, FileText, Calendar, Clock, User } from 'lucide-react';
+import { Share2, Download, Settings, FileText, Calendar, Clock, User } from 'lucide-react';
 import { DocumentSidebarProps } from './types';
 
 export default function DocumentSidebar({ document, onAction, hasApprovalWorkflow = false }: DocumentSidebarProps) {
@@ -35,11 +35,11 @@ export default function DocumentSidebar({ document, onAction, hasApprovalWorkflo
       action: () => onAction('share-link')
     },
     {
-      id: 'print',
-      label: 'Print',
-      icon: Printer,
-      description: 'Print document',
-      action: () => onAction('print')
+      id: 'download',
+      label: 'Download',
+      icon: Download,
+      description: 'Download document',
+      action: () => onAction('download')
     }
   ];
 
