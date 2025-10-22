@@ -6,6 +6,7 @@ import ChatHeader from './ChatHeader';
 import ConversationArea from './ConversationArea';
 import CompetitiveResearchInterface from './CompetitiveResearchInterface';
 import CampaignExecutionInterface from './CampaignExecutionInterface';
+import TRGTMInterface from './TRGTMInterface';
 import { Message } from './messages/types';
 import { DEMO_CONTINUATION_MESSAGES, DEMO_ABTEST_MESSAGES } from './messages/demoData';
 import { Workflow } from './orchestration/types';
@@ -85,6 +86,99 @@ const getDynamicWorkflow = (completedAgents: Set<string>, activeAgent: string | 
   };
 };
 
+// Generate TR GTM Report HTML
+const generateTRGTMReport = (
+  sections: Array<{id: number, title: string, content: string}>,
+  insights: Record<number, string[]>
+): string => {
+  const sectionsHTML = sections.map(section => {
+    const sectionInsights = insights[section.id] || [];
+    const insightsHTML = sectionInsights.length > 0
+      ? `
+        <div style="margin-top: 30px; padding: 20px; background: #f7fafc; border-left: 4px solid #3b82f6;">
+          <h4 style="color: #1e40af; margin: 0 0 15px 0; font-size: 16px;">Strategic Insights</h4>
+          ${sectionInsights.map(insight => `
+            <p style="margin: 10px 0; color: #334155; font-size: 14px; line-height: 1.6;">
+              • ${insight}
+            </p>
+          `).join('')}
+        </div>
+      `
+      : '';
+
+    return `
+      <div style="margin-bottom: 40px; page-break-inside: avoid;">
+        <h2 style="color: #475569; border-bottom: 2px solid #475569; padding-bottom: 10px; margin-bottom: 20px;">
+          ${section.id}. ${section.title}
+        </h2>
+        <div style="line-height: 1.8; color: #1e293b;">
+          ${section.content.split('\n\n').map(paragraph => {
+            if (paragraph.startsWith('•')) {
+              return `<p style="margin: 8px 0 8px 20px;">• ${paragraph.substring(1).trim()}</p>`;
+            }
+            return `<p style="margin: 15px 0;">${paragraph}</p>`;
+          }).join('')}
+        </div>
+        ${insightsHTML}
+      </div>
+    `;
+  }).join('');
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Thomson Reuters GTM Strategy</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 40px;
+      color: #1e293b;
+      background: #ffffff;
+    }
+    h1 {
+      color: #0f172a;
+      border-bottom: 3px solid #475569;
+      padding-bottom: 15px;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #64748b;
+      font-size: 18px;
+      margin-bottom: 30px;
+    }
+    .date {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-bottom: 40px;
+    }
+    @media print {
+      body { margin: 20px; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Thomson Reuters</h1>
+  <div class="subtitle">Go-to-Market Strategy Document</div>
+  <div class="date">Generated on ${new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  })}</div>
+
+  ${sectionsHTML}
+
+  <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #94a3b8; font-size: 12px; text-align: center;">
+    Generated with Claude Code - Thomson Reuters GTM Strategy Planning Tool
+  </div>
+</body>
+</html>
+  `;
+};
+
 export default function ChatLayout() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -113,6 +207,10 @@ export default function ChatLayout() {
   const [prefilledMessage, setPrefilledMessage] = useState<string>('');
   const [isCompetitiveMode, setIsCompetitiveMode] = useState(false);
   const [isCampaignExecutionMode, setIsCampaignExecutionMode] = useState(false);
+  const [isTRGTMMode, setIsTRGTMMode] = useState(false);
+  const [trGTMDocumentSections, setTRGTMDocumentSections] = useState<Array<{id: number, title: string, content: string}>>([]);
+  const [trGTMVOCInsights, setTRGTMVOCInsights] = useState<Record<number, string[]>>({});
+  const [trGTMConflictAlerts, setTRGTMConflictAlerts] = useState<Record<number, string[]>>({});
   const processedMessageIds = useRef<Set<string>>(new Set());
   const processedParams = useRef<Set<string>>(new Set());
 
@@ -365,6 +463,378 @@ export default function ChatLayout() {
         }
         setIsLoading(false);
       }, 2000);
+    } else if (isTRGTMMode) {
+      // Handle TR GTM Strategy responses
+      setIsLoading(true);
+
+      setTimeout(() => {
+        // Check if this is a Section 1 answer
+        const section1Options = [
+          'Increase market share in existing segments',
+          'Enter new geographic markets',
+          'Launch new product/solution',
+          'Competitive displacement',
+          'Digital transformation acceleration',
+          'Regulatory compliance modernization'
+        ];
+
+        const segmentOptions = [
+          'Tax & Accounting Professionals',
+          'Legal Professionals',
+          'Corporate (Tax, Legal, Risk & Fraud)',
+          'Reuters News',
+          'Government'
+        ];
+
+        if (section1Options.some(opt => content.includes(opt)) || segmentOptions.some(opt => content.includes(opt))) {
+          // Check if user selected "Increase market share in existing segments"
+          if (content.includes('Increase market share in existing segments')) {
+            // Show follow-up question for segment selection
+            const segmentQuestion: Message = {
+              id: generateMessageId(),
+              type: 'question',
+              content: '',
+              sender: 'assistant',
+              timestamp: new Date(),
+              metadata: {
+                questions: ['Which segment do you want to target?'],
+                questionOptions: [
+                  {
+                    question: 'Which segment do you want to target?',
+                    options: [
+                      'Tax & Accounting Professionals',
+                      'Legal Professionals',
+                      'Corporate (Tax, Legal, Risk & Fraud)',
+                      'Reuters News',
+                      'Government'
+                    ]
+                  }
+                ]
+              }
+            };
+            setMessages(prev => [...prev, segmentQuestion]);
+            setIsLoading(false);
+            return;
+          }
+
+          // Section 1: Strategic Definition - AI Analysis Response
+          const aiAnalysis: Message = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: `Excellent choice. I've analyzed your objective: **${content}**\n\nBased on Thomson Reuters' market positioning and Voice of Customer insights, this aligns well with current market demands. Let me compile the strategic definition for your GTM document.`,
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'GTM Strategy Agent',
+              agentColor: '#475569'
+            }
+          };
+
+          setMessages(prev => [...prev, aiAnalysis]);
+
+          // Generate Section 1 document content with specific details based on the challenge
+          setTimeout(() => {
+            // Add a "generating document" message
+            const generatingMessage: Message = {
+              id: generateMessageId(),
+              type: 'assistant-text',
+              content: 'Analyzing market data, customer insights, and competitive intelligence to build your Strategic Definition...',
+              sender: 'assistant',
+              timestamp: new Date(),
+              metadata: {
+                agentName: 'GTM Strategy Agent',
+                agentColor: '#475569'
+              }
+            };
+            setMessages(prev => [...prev, generatingMessage]);
+
+            // Now generate the actual document after additional delay
+            setTimeout(() => {
+            let detailedContent = '';
+            let insights: string[] = [];
+
+            if (content.includes('Regulatory compliance modernization')) {
+              detailedContent = `Objective\nModernize regulatory compliance operations for financial services institutions to reduce regulatory risk exposure, improve compliance efficiency by 40-60%, and achieve real-time regulatory change management across 750+ global jurisdictions.\n\nStrategic Definition\nThis GTM strategy targets Chief Compliance Officers and General Counsel at Tier 1 banks, asset managers, and insurance companies struggling with escalating regulatory complexity. We will position Thomson Reuters Regulatory Intelligence as the definitive AI-powered compliance modernization platform.\n\nTarget Customer Profile:\n• Financial institutions with $50B+ AUM managing multi-jurisdictional compliance\n• Organizations facing 200+ regulatory changes monthly across their operations\n• Compliance teams spending 40%+ of time on manual regulatory tracking and interpretation\n• Firms with recent regulatory penalties or audit findings requiring remediation\n\nUnique Value Proposition:\n"Reduce compliance costs by 50% while eliminating 95% of regulatory change management risk through AI-powered, real-time regulatory intelligence covering every jurisdiction where you operate."\n\nStrategic Rationale\nThomson Reuters processes 40 billion regulatory updates annually across 750+ jurisdictions with 99.7% accuracy. Our AI models, trained on 150 years of regulatory content, identify relevant changes 14 days faster than manual processes. Current customers report 65% reduction in compliance FTEs and 73% fewer false positives.\n\nThis GTM strategy will leverage:\n• Regulatory Intelligence Platform covering MiFID II, Dodd-Frank, Basel III/IV, GDPR, and 450+ other frameworks\n• AI-powered obligation extraction reducing manual review from 8 hours to 12 minutes per regulation\n• Automated impact assessment mapping regulations to 200+ business processes and controls\n• Real-time monitoring of regulatory changes with predictive alerts for upcoming requirements\n\nKey Success Factors\n• Executive sponsorship from CCO and GC with Board-level visibility\n• ROI demonstration: $12M annual savings for $100B AUM institution\n• Risk reduction: 70% fewer compliance violations, 85% reduction in audit findings\n• Integration with existing GRC platforms (Archer, MetricStream, ServiceNow)\n• Proof of concept showing 90-day time-to-value with measurable compliance efficiency gains\n\nMarket Context\nGlobal RegTech market: $42.8B (2025) growing at 12% CAGR. Regulatory complexity increasing 28% YoY with average of 450 new regulations daily worldwide. 2024 global compliance penalties: $10.4B, up 35% from 2023. Post-SVB collapse, regulators intensified scrutiny - 78% of CCOs cite technology modernization as top priority to meet heightened expectations.`;
+
+              insights = [
+                'VOC Insight: 84% of compliance officers report "drowning in regulatory changes" - cite inability to keep pace as #1 risk factor',
+                'VOC Insight: Customers using our AI platform report 3.2x ROI in 18 months, primarily from 65% FTE reduction and elimination of $2-5M in annual penalties',
+                'Market Data: Regulatory change volume increased 28% YoY - manual processes now require 12+ FTEs vs 3 FTEs with automation',
+                'VOC Insight: "We went from 8 hours to 12 minutes for regulation review" - Global Compliance Head, Top 5 U.S. Bank',
+                'Risk Data: Average compliance breach costs $14.8M (fines + remediation + reputation) - our customers report 85% reduction in violations'
+              ];
+            } else if (content.includes('Launch new product/solution')) {
+              detailedContent = `Objective\nLaunch [new AI-powered legal research assistant] to achieve $50M ARR within 18 months, capturing 25% market penetration among Am Law 200 firms, and establishing category leadership in GenAI-powered legal technology.\n\nStrategic Definition\nThis GTM strategy positions our new GenAI legal research solution as the definitive productivity multiplier for corporate legal departments and law firms. We will target General Counsel at Fortune 500 companies and Managing Partners at Am Law 200 firms seeking to reduce legal research costs by 60% while improving research quality and speed.\n\nTarget Customer Profile:\n• Corporate legal departments with 50+ attorneys spending $2M+ annually on legal research\n• Am Law 200 law firms seeking competitive advantage through AI-powered associate productivity\n• In-house legal teams under mandate to "do more with less" - reduce outside counsel spend by 30%+\n• Early adopter General Counsel who championed previous legal tech transformations (e-discovery, contract analytics)\n\nUnique Value Proposition:\n"Get senior associate-quality legal research in 3 minutes instead of 3 hours - reduce research costs by 60% while uncovering insights that traditional search misses."\n\nStrategic Rationale\nThomson Reuters successfully launched CoCounsel (GenAI legal assistant) in Q2 2024, achieving 40% adoption among beta customers within 6 months and $12M ARR. Customer research from 200+ beta users shows 68% reduction in research time, 4.2x more relevant precedent discovery, and 94% user satisfaction. Our Westlaw platform integration creates immediate workflow adoption - 82% of customers already using Westlaw daily.\n\nThis GTM strategy will leverage:\n• Exclusive GPT-4 integration with proprietary Westlaw legal content (60M+ documents)\n• Customer co-creation with 50 design partner firms providing real-time feedback\n• Integration into existing Westlaw workflow - zero friction adoption for 1.2M existing users\n• Thought leadership platform: Reuters Legal reaches 600K legal professionals, 12M monthly impressions\n\nKey Success Factors\n• Launch with 50 lighthouse customers (10 Am Law 20 firms + 40 Fortune 100 GCs) demonstrating clear ROI\n• ROI calculator showing $1.2M annual savings for 100-attorney department ($60K per attorney saved)\n• Product differentiation: Hallucination rate <2% vs 15-20% for generic LLMs (validated by independent study)\n• Viral adoption model: 80%+ of users become advocates within 30 days based on beta data\n• Time-to-first-value: Deliver "wow moment" within first 10 minutes of use\n\nMarket Context\nLegal AI market: $8.5B TAM growing at 15% CAGR. GenAI subcategory exploding at 47% CAGR as legal sector embraces transformation. First-mover advantage critical - customer research shows 65% of buyers select first vendor evaluated and stick for 3+ years due to switching costs. Current competitive landscape fragmented (Lexis, Casetext, Harvey AI, vLex) with no clear category leader - whitespace opportunity to define and dominate the category.`;
+
+              insights = [
+                'VOC Insight: Beta customers report "This is the biggest productivity leap since we moved from books to online research 25 years ago" - 94% user satisfaction',
+                'VOC Insight: "We reduced first-year associate research time by 68% - that\'s $180K in cost savings per associate" - GC, Fortune 50 Technology Company',
+                'Market Data: Products launched with customer co-creation achieve 2.8x higher adoption rates (40% vs 14%) and 2.1x faster time-to-revenue',
+                'VOC Insight: 82% of Westlaw users indicate "high willingness to pay" for AI capabilities - existing relationship reduces CAC by 5x ($12K vs $62K)',
+                'Competitive Intel: First-to-market players in legal tech capture 35% higher market share and sustain 28% price premiums vs. fast-followers'
+              ];
+            } else if (content.includes('Tax & Accounting Professionals') ||
+                       content.includes('Legal Professionals') ||
+                       content.includes('Corporate (Tax, Legal, Risk & Fraud)') ||
+                       content.includes('Reuters News') ||
+                       content.includes('Government')) {
+              // User selected a specific segment - use Tax & Accounting as the detailed example
+              const selectedSegment = content;
+              detailedContent = `${content}\n\nObjective\nIncrease market share in the Tax & Accounting Professional segment from 38% to 45% (7-point gain) within 24 months, representing $420M in incremental revenue, through competitive displacement of CCH/Wolters Kluwer and expansion within existing customer accounts.\n\nStrategic Definition\nThis GTM strategy targets mid-market accounting firms (50-500 professionals) and corporate tax departments at Fortune 1000 companies currently using competitive solutions or operating with incomplete Thomson Reuters portfolios. We will execute a coordinated competitive displacement campaign against Wolters Kluwer CCH combined with aggressive cross-sell into existing ONESOURCE customers.\n\nTarget Customer Profile:\n• Mid-market accounting firms (50-500 CPAs) using CCH ProSystem fx or Lacerte with 5+ year old implementations\n• Corporate tax departments at F1000 companies with $500M+ revenue using point solutions vs. integrated platforms\n• Current ONESOURCE customers using only 1-2 modules with expansion potential to 5+ module suites\n• Firms experiencing partner/talent retention challenges seeking modern technology to attract next-gen accountants\n\nUnique Value Proposition:\n"Consolidate 7 tax and accounting tools into one AI-powered platform - reduce software costs by 35%, cut tax compliance time by 40%, and win the war for talent with technology that CPAs actually want to use."\n\nStrategic Rationale\nThomson Reuters holds 38% share of $6B tax & accounting software market, with Wolters Kluwer at 41% and Intuit at 12%. Win/loss analysis shows we lose on "perceived ease of use" but win decisively on "platform breadth" and "technical accuracy." Account penetration analysis reveals 68% of customers use <50% of available portfolio - massive expansion opportunity.\n\nWin-back analysis of 200 churned accounts shows:\n• 73% switched due to pricing (addressable through value selling and TCO models)\n• 58% cited "better user experience" at competitor (addressed by 2024 UX redesign)\n• Average customer stays with competitor for 6.2 years before reconsidering\n• Win-back conversion rate of 22% when we target customers 3+ years post-switch\n\nThis GTM strategy will leverage:\n• Competitive battlecards with win themes against CCH (integration, AI/automation, modern UX, better support)\n• Account-based marketing to 500 named accounts representing $280M revenue opportunity\n• Portfolio expansion playbook: customers using 3+ products show 2.1x higher retention (94% vs 82%) and 3.5x higher LTV\n• Customer success programs including quarterly business reviews, dedicated TAMs for $100K+ accounts, user certification\n\nKey Success Factors\n• Sales team enablement: 100% of reps certified on competitive selling and value-based pricing\n• Executive sponsorship program pairing TR executives with C-suite at top 100 accounts ($180M pipeline)\n• Product integration creating switching costs - customers using integrated workflows show 45% higher retention\n• ROI calculators customized by firm size showing $180K-$2.4M annual value (validated by customer case studies)\n• Digital lead generation: 15K MQLs from content marketing targeting "CCH alternative" and "tax technology modernization"\n\nMarket Context\nTax & accounting software market: $6B growing at 8% CAGR. Market consolidation accelerating - 67% of firms open to switching for 20%+ efficiency gains or 15%+ cost reduction. Competitive vulnerability highest among CCH ProSystem fx customers (42% of market) using 10+ year old on-premise deployments - migration to cloud creates switching opportunity. Talent shortage (200K accountant deficit by 2027) driving technology modernization as competitive advantage for recruiting.`;
+
+              insights = [
+                'VOC Insight: "Moving to Thomson Reuters cut our tax season overtime by 40% - that alone paid for the software in year one" - Tax Partner, 180-person CPA firm',
+                'VOC Insight: Portfolio customers (3+ products) report 2.1x higher retention (94% vs 82%) and generate 3.5x higher lifetime value due to lower churn and expansion',
+                'Market Data: Competitive displacement win rate of 22% when targeting CCH customers with 3+ year old implementations - ROI focused messaging critical',
+                'VOC Insight: "We were spending $420K across 7 vendors - consolidated to Thomson Reuters at $290K with better functionality" - VP Tax, F500 Manufacturing',
+                'Competitive Intel: Account penetration above 60% of wallet share correlates with 95%+ renewal rates - expansion motion more efficient than new logo acquisition'
+              ];
+            } else {
+              // Default content for other challenges
+              detailedContent = `Business Challenge\n${content}\n\nObjective\nAddress the strategic business challenge through a comprehensive go-to-market approach that leverages Thomson Reuters' market position, product capabilities, and customer relationships.\n\nStrategic Rationale\nThomson Reuters is well-positioned to address this challenge through our established market presence, trusted brand reputation, and comprehensive product portfolio. This GTM strategy will leverage our strengths in data analytics, regulatory intelligence, and workflow automation.\n\nKey Success Factors\n• Executive sponsorship and cross-functional alignment\n• Clear value proposition differentiation\n• Measurable outcomes tied to customer ROI\n• Scalable go-to-market approach\n\nMarket Context\nTarget market shows strong growth potential with increasing demand for digital transformation solutions. Current market dynamics favor solutions that combine content, technology, and services.`;
+
+              insights = [
+                'Enterprise B2B solutions show average sales cycle of 6-9 months with 3.2x ROI in year 2',
+                'Digital-first GTM strategies reduce customer acquisition costs by 35-40%',
+                'Solutions demonstrating clear ROI achieve 2.5x higher close rates'
+              ];
+            }
+
+            setTRGTMDocumentSections([{
+              id: 1,
+              title: 'Strategic Definition',
+              content: detailedContent
+            }]);
+
+            setTRGTMVOCInsights({ 1: insights });
+
+            // Show next section options
+            const nextSectionMessage: Message = {
+              id: generateMessageId(),
+              type: 'assistant-text',
+              content: `Perfect! I've added Strategic Definition to your GTM document. What would you like to work on next?`,
+              sender: 'assistant',
+              timestamp: new Date(),
+              metadata: {
+                agentName: 'Campaign Strategy Agent',
+                agentColor: '#475569',
+                actions: [
+                  { label: '2. Financial Targets', variant: 'primary' as const, action: 'tr-gtm-section-2' },
+                  { label: '3. GTM Strategy & Approach', variant: 'outline' as const, action: 'tr-gtm-section-3' }
+                ]
+              }
+            };
+
+            setMessages(prev => [...prev, nextSectionMessage]);
+            setIsLoading(false);
+            }, 2500); // Inner timeout for document generation
+          }, 2000); // Outer timeout for "analyzing" message
+        }
+
+        // Section 2: Financial Targets - Handle responses
+        const section2Options = [
+          'Revenue growth ($X to $Y over 12-24 months)',
+          'Pipeline generation ($ value and # of opportunities)',
+          'Customer acquisition cost (CAC) optimization',
+          'Average deal size expansion',
+          'Customer lifetime value (LTV) improvement',
+          'Market share percentage point gains'
+        ];
+
+        // Check if this is a revenue range answer (from follow-up questions)
+        const revenueRangePattern = /\$[\d,]+[MBK]?\s*-\s*\$[\d,]+[MBK]?/;
+        const isRevenueRange = revenueRangePattern.test(content);
+
+        if (section2Options.some(opt => content.includes(opt)) || isRevenueRange) {
+          // Check if user selected "Revenue growth" - need follow-up questions
+          if (content.includes('Revenue growth ($X to $Y over 12-24 months)')) {
+            // Show follow-up questions for current and target revenue
+            const revenueQuestions: Message = {
+              id: generateMessageId(),
+              type: 'question',
+              content: '',
+              sender: 'assistant',
+              timestamp: new Date(),
+              metadata: {
+                questions: [
+                  'What is your current annual revenue (baseline)?',
+                  'What is your target revenue in 12-24 months?'
+                ],
+                questionOptions: [
+                  {
+                    question: 'What is your current annual revenue (baseline)?',
+                    options: [
+                      '$50M - $100M',
+                      '$100M - $250M',
+                      '$250M - $500M',
+                      '$500M - $1B',
+                      '$1B+'
+                    ]
+                  },
+                  {
+                    question: 'What is your target revenue in 12-24 months?',
+                    options: [
+                      '$100M - $250M',
+                      '$250M - $500M',
+                      '$500M - $1B',
+                      '$1B - $2B',
+                      '$2B+'
+                    ]
+                  }
+                ]
+              }
+            };
+            setMessages(prev => [...prev, revenueQuestions]);
+            setIsLoading(false);
+            return;
+          }
+
+          // Section 2: Financial Targets - AI Analysis Response
+          const aiAnalysis: Message = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: `Great! I'm analyzing your financial objective: **${content}**\n\nLet me pull the relevant market data, benchmarks, and customer success metrics to build your Financial Targets section.`,
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'GTM Strategy Agent',
+              agentColor: '#475569'
+            }
+          };
+
+          setMessages(prev => [...prev, aiAnalysis]);
+
+          // Generate Section 2 document content
+          setTimeout(() => {
+            const generatingMessage: Message = {
+              id: generateMessageId(),
+              type: 'assistant-text',
+              content: 'Calculating financial targets, pipeline models, and ROI projections based on Thomson Reuters benchmarks and industry data...',
+              sender: 'assistant',
+              timestamp: new Date(),
+              metadata: {
+                agentName: 'GTM Strategy Agent',
+                agentColor: '#475569'
+              }
+            };
+            setMessages(prev => [...prev, generatingMessage]);
+
+            setTimeout(() => {
+              let financialContent = '';
+              let financialInsights: string[] = [];
+
+              // Determine which segment we're targeting from Section 1
+              const currentSection1 = trGTMDocumentSections.find(s => s.id === 1);
+              const isTaxSegment = currentSection1?.content.includes('Tax & Accounting Professionals');
+
+              // Parse revenue values if present (format: "$X - $Y | $A - $B")
+              let currentRevenue = '';
+              let targetRevenue = '';
+              let incrementalRevenue = '';
+              if (content.includes('|')) {
+                const parts = content.split('|').map(p => p.trim());
+                if (parts.length >= 2) {
+                  currentRevenue = parts[0];
+                  targetRevenue = parts[1];
+                  // Calculate rough midpoint for incremental
+                  // For now, use the target range midpoint
+                  incrementalRevenue = targetRevenue;
+                }
+              }
+
+              if (content.includes('Revenue growth') || isRevenueRange) {
+                if (isTaxSegment) {
+                  // Use actual revenue values if provided
+                  const revenueHeader = (currentRevenue && targetRevenue)
+                    ? `Current Revenue: ${currentRevenue}\nTarget Revenue: ${targetRevenue}\n\n24-Month Revenue Goal: Grow from ${currentRevenue} to ${targetRevenue}`
+                    : `24-Month Revenue Goal: $420M incremental revenue (38% → 45% market share)`;
+
+                  financialContent = `Tax & Accounting Professionals\n\nRevenue Targets\n${revenueHeader}\n• Year 1: 60% of growth target\n• Year 2: Remaining 40% of growth target\n\nRevenue Breakdown by Motion:\n• Competitive Displacement (CCH/Wolters Kluwer): $252M (60% of target)\n  - 340 net new customer acquisitions @ avg $740K ACV\n  - Win rate target: 28% (up from 22% baseline)\n  - Average sales cycle: 6.2 months\n\n• Portfolio Expansion (Existing Customers): $126M (30% of target)\n  - 890 customers expanding from 1-2 modules to 3+ modules\n  - Average expansion value: $142K per customer\n  - Expansion sales cycle: 3.4 months\n\n• Win-Back (Previously Churned Customers): $42M (10% of target)\n  - 72 win-back accounts @ avg $585K ACV\n  - Target accounts 3-7 years post-churn\n  - Win-back conversion rate: 22%\n\nPipeline Requirements\nTo achieve $420M in closed revenue over 24 months:\n• Total pipeline required: $1.68B (4.0x coverage ratio)\n• Year 1 pipeline build: $720M by end of Q2\n• Year 2 pipeline build: $960M by end of Q2\n\nPipeline Sources:\n• Sales-Qualified Leads (SQL): 2,800 accounts @ 12% close rate = 340 new logos\n• Marketing-Qualified Leads (MQL): 15,000 leads → 2,800 SQLs (19% conversion)\n• Account-Based Marketing (ABM): 500 named accounts, 40% engagement, 28% close rate\n• Customer Success-Qualified Expansion: 890 expansion opportunities from 2,100 customer base\n\nKey Financial Metrics & KPIs\n• Customer Acquisition Cost (CAC): $62,000 (industry benchmark)\n  - Competitive displacement CAC: $78,000 (higher touch)\n  - Expansion CAC: $12,000 (existing relationship)\n  - Blended CAC target: $52,000 (16% improvement)\n\n• Customer Lifetime Value (LTV): $2.8M\n  - Average customer tenure: 8.2 years\n  - Net retention rate: 94% (portfolio customers 3+ products)\n  - Annual price increases: 3.5%\n  - LTV:CAC ratio: 53.8:1 (target: 5:1+ is healthy)\n\n• Payback Period: 18 months\n  - New logo payback: 22 months\n  - Expansion payback: 6 months\n  - Blended payback: 18 months\n\nBudget Allocation\nTotal GTM Investment: $86M over 24 months\n\n• Sales & Sales Enablement: $42M (49%)\n  - 28 new enterprise AEs @ $280K OTE = $7.8M\n  - Sales leadership & operations: $4.2M\n  - Sales enablement & training: $2.8M\n  - Competitive battlecards & tools: $1.2M\n  - Partner channel program: $12M\n  - Customer success expansion team: $14M\n\n• Marketing & Demand Generation: $28M (33%)\n  - Account-Based Marketing (500 accounts): $8.4M\n  - Content marketing & thought leadership: $4.2M\n  - Digital advertising (LinkedIn, Google): $6.8M\n  - Events & conferences (12 tier-1 events): $3.2M\n  - Marketing operations & technology: $2.8M\n  - Customer marketing & advocacy: $2.6M\n\n• Product & Solutions: $12M (14%)\n  - Competitive feature development: $6.2M\n  - Integration & platform investments: $3.8M\n  - Customer co-innovation program: $2M\n\n• Technology & Tools: $4M (4%)\n  - CRM & sales tech stack: $1.6M\n  - Marketing automation & analytics: $1.2M\n  - Customer success platform: $1.2M\n\nROI Analysis\nProgram ROI: 4.9x\n• Total Investment: $86M\n• Total Revenue: $420M\n• Gross Margin: 78% = $327.6M gross profit\n• Net Contribution (after GTM costs): $241.6M\n• ROI Ratio: $241.6M / $86M = 2.8x net ROI\n• Payback: 18 months\n\nRisk-Adjusted Scenarios\n• Best Case (110% attainment): $462M revenue, $351M gross profit, 3.1x ROI\n• Base Case (100% attainment): $420M revenue, $327.6M gross profit, 2.8x ROI  \n• Conservative Case (85% attainment): $357M revenue, $278M gross profit, 2.2x ROI`;
+
+                  financialInsights = [
+                    'Benchmark Data: Top-performing tax software vendors achieve 4.2x pipeline coverage with 24% win rates - our targets are conservative',
+                    'VOC Insight: "The ROI calculator showing $420K in annual savings was the business case that got executive buy-in" - CFO, Mid-Market Accounting Firm',
+                    'Market Data: Tax software market 8% CAGR - our 7-point share gain assumes capturing 80% of incremental market growth plus share shifts',
+                    'Customer Success Data: Portfolio customers (3+ products) have 2.1x higher LTV ($3.8M vs $1.8M) and 94% retention vs 82% for single-product',
+                    'Sales Data: Win-back campaigns targeting 3-7 year churned customers achieve 22% close rate at 25% lower CAC than net new logos'
+                  ];
+                } else {
+                  // Generic revenue growth content
+                  financialContent = `Revenue Targets\n24-Month Revenue Goal: Achieve revenue growth from current baseline to target through strategic GTM execution.\n\nRevenue Breakdown:\n• New Customer Acquisition: 60% of incremental revenue\n• Existing Customer Expansion: 30% of incremental revenue\n• Partner/Channel Revenue: 10% of incremental revenue\n\nPipeline Requirements\n• Pipeline coverage ratio: 4.0x\n• Lead-to-opportunity conversion: 18-22%\n• Opportunity-to-close rate: 22-28%\n\nKey Financial Metrics\n• Customer Acquisition Cost (CAC): Industry benchmark\n• Customer Lifetime Value (LTV): 5:1 LTV:CAC ratio target\n• Payback Period: 18-24 months\n\nBudget Allocation\n• Sales & Enablement: 45-50%\n• Marketing & Demand Gen: 30-35%\n• Product & Solutions: 12-15%\n• Technology & Tools: 3-5%\n\nROI Analysis\n• Target program ROI: 3.5-5.0x over 24 months\n• Gross margin expectations: 75-80%\n• Risk-adjusted scenarios modeled`;
+
+                  financialInsights = [
+                    'Industry benchmark: B2B SaaS companies achieve 4.0x pipeline coverage for predictable revenue attainment',
+                    'Customer acquisition: Best-in-class companies maintain LTV:CAC ratios above 5:1 with 18-month payback periods',
+                    'Revenue mix: Companies with 30%+ revenue from expansions show 1.8x higher valuations due to lower CAC and higher retention'
+                  ];
+                }
+              } else if (content.includes('Pipeline generation')) {
+                financialContent = `Pipeline Generation Strategy\n\nPipeline Targets\n• 24-Month Total Pipeline: $1.68B\n• Year 1 Pipeline Build: $720M (by end of Q2)\n• Year 2 Pipeline Build: $960M (by end of Q2)\n• Average Deal Size: $740K (new logos), $142K (expansions)\n\nPipeline Sources & Velocity\n• Sales Development (SDR/BDR): 35% of pipeline\n  - 5,250 qualified conversations → 1,838 SQLs\n  - SDR-to-SQL conversion: 35%\n  - SQL-to-close: 22%\n\n• Marketing-Qualified Leads (MQL): 30% of pipeline  \n  - 15,000 MQLs → 2,800 SQLs (19% conversion)\n  - Content downloads, webinars, events\n  - Average time MQL→SQL: 42 days\n\n• Account-Based Marketing: 20% of pipeline\n  - 500 named accounts, 40% engagement rate\n  - High-value deals: avg $1.2M ACV\n  - ABM close rate: 28% vs 22% non-ABM\n\n• Customer Success Expansion: 15% of pipeline\n  - 2,100 customer base → 890 expansion opps\n  - Quarterly Business Reviews identify expansion signals\n  - Expansion close rate: 42%\n\nPipeline Quality Metrics\n• Stage 1 (Discovery): 40% advance rate, 35-day avg duration\n• Stage 2 (Qualification): 65% advance rate, 28-day avg duration  \n• Stage 3 (Proposal): 55% advance rate, 42-day avg duration\n• Stage 4 (Negotiation): 75% advance rate, 21-day avg duration\n• Overall sales cycle: 6.2 months (new logos), 3.4 months (expansion)\n\nLeading Indicators\n• Monthly new pipeline creation: $70M minimum\n• Pipeline coverage by quarter: 4.0x minimum\n• Pipeline velocity: 15% increase quarter-over-quarter\n• Win rate trending: 22% → 28% over 24 months`;
+
+                financialInsights = [
+                  'Pipeline Data: Companies maintaining 4.0x+ pipeline coverage achieve 92% of quota vs 67% for <3.0x coverage',
+                  'Conversion Benchmarks: ABM programs drive 28% win rates vs 22% traditional lead gen - justify higher investment',
+                  'Velocity Analysis: Reducing sales cycle by 15% (6.2mo → 5.3mo) increases annual revenue capacity by $42M with same resources'
+                ];
+              } else {
+                // Generic financial targets
+                financialContent = `Financial Objectives\n${content}\n\nKey Performance Indicators\n• Revenue growth targets with quarterly milestones\n• Pipeline coverage and conversion metrics\n• Customer acquisition and retention economics\n• Return on investment analysis\n\nBudget Framework\n• Sales and sales enablement investment\n• Marketing and demand generation allocation\n• Product and solution development\n• Technology and operational tools\n\nSuccess Metrics\n• Target ROI: 3.5-5.0x over program lifecycle\n• Customer acquisition cost optimization\n• Lifetime value maximization\n• Payback period targets`;
+
+                financialInsights = [
+                  'Financial Planning: B2B GTM programs typically require 4.0x pipeline coverage for predictable revenue achievement',
+                  'Investment Mix: Best-performing programs allocate 45-50% to sales, 30-35% to marketing, 15-20% to product/enablement'
+                ];
+              }
+
+              // Add Section 2 to document
+              setTRGTMDocumentSections(prev => [...prev, {
+                id: 2,
+                title: 'Financial Targets',
+                content: financialContent
+              }]);
+
+              // Add Section 2 insights
+              setTRGTMVOCInsights(prev => ({ ...prev, 2: financialInsights }));
+
+              // Show final report options
+              const nextSectionMessage: Message = {
+                id: generateMessageId(),
+                type: 'assistant-text',
+                content: `Perfect! Your Thomson Reuters GTM Strategy document is complete with Strategic Definition and Financial Targets. The comprehensive strategy is ready for review and approval.\n\nYou can download the full report or set up an approval workflow to get stakeholder sign-off before proceeding.`,
+                sender: 'assistant',
+                timestamp: new Date(),
+                metadata: {
+                  agentName: 'Campaign Strategy Agent',
+                  agentColor: '#475569',
+                  actions: [
+                    { label: 'Download GTM Strategy Report', variant: 'primary' as const, action: 'download-tr-gtm-report' },
+                    { label: 'Set Up Approval Workflow', variant: 'secondary' as const, action: 'setup-tr-gtm-approval' }
+                  ]
+                }
+              };
+
+              setMessages(prev => [...prev, nextSectionMessage]);
+              setIsLoading(false);
+            }, 2500);
+          }, 2000);
+        } else {
+          // Generic TR GTM response
+          const agentMessage: Message = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: `I'm analyzing your input: "${content}". Let me coordinate with the GTM strategy team to incorporate this into your document.`,
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'GTM Strategy Agent',
+              agentColor: '#475569'
+            }
+          };
+
+          setMessages(prev => [...prev, agentMessage]);
+          setIsLoading(false);
+        }
+      }, 2000);
     } else {
       // Handle other messages normally
       setIsLoading(true);
@@ -386,7 +856,7 @@ export default function ChatLayout() {
         setIsLoading(false);
       }, 2000);
     }
-  }, [generateMessageId]);
+  }, [generateMessageId, isTRGTMMode]);
 
   // Save orchestration panel state to localStorage
   useEffect(() => {
@@ -514,6 +984,40 @@ export default function ChatLayout() {
       };
 
       setMessages([executionIntroMessage]);
+
+      // Clear URL parameters after processing
+      router.replace('/chat');
+    } else if (modeParam === 'tr-gtm') {
+      // Handle TR GTM Strategy mode
+      processedParams.current.add(paramKey);
+      setIsTRGTMMode(true);
+
+      // Initialize TR GTM Strategy messages
+      const trGTMIntroMessage: Message = {
+        id: 'tr-gtm-intro',
+        type: 'assistant-text',
+        content: 'Welcome to Thomson Reuters GTM Strategy Planning! I\'m your Campaign Strategy Agent, here to help you create a comprehensive Go-to-Market strategy for your B2B enterprise campaign.\n\nWe\'ll build your strategy in two key sections: Strategic Definition and Financial Targets. As we complete each section, your GTM strategy document will appear on the right.\n\nWhat would you like to work on today?',
+        sender: 'assistant',
+        timestamp: new Date(),
+        metadata: {
+          agentName: 'Campaign Strategy Agent',
+          agentColor: '#475569',
+          actions: [
+            {
+              label: '1. Strategic Definition',
+              variant: 'primary' as const,
+              action: 'tr-gtm-section-1'
+            },
+            {
+              label: '2. Financial Targets',
+              variant: 'outline' as const,
+              action: 'tr-gtm-section-2'
+            }
+          ]
+        }
+      };
+
+      setMessages([trGTMIntroMessage]);
 
       // Clear URL parameters after processing
       router.replace('/chat');
@@ -855,6 +1359,7 @@ export default function ChatLayout() {
   // Handle action button clicks
   const handleActionClick = (actionLabel: string) => {
     console.log('Action clicked:', actionLabel);
+    console.log('isTRGTMMode:', isTRGTMMode);
 
     switch (actionLabel) {
       case 'halloween-campaign-yes':
@@ -1298,9 +1803,167 @@ export default function ChatLayout() {
         setMessages(prev => [...prev, successMessage]);
         break;
 
+      case 'download-tr-gtm-report': {
+        // Handle GTM Strategy Report Download
+        console.log('Downloading TR GTM Strategy report');
+
+        // Generate HTML report
+        const reportHTML = generateTRGTMReport(trGTMDocumentSections, trGTMVOCInsights);
+
+        // Create downloadable file
+        const blob = new Blob([reportHTML], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Thomson_Reuters_GTM_Strategy_${new Date().toISOString().split('T')[0]}.html`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        // Show confirmation message
+        const downloadMessage: Message = {
+          id: generateMessageId(),
+          type: 'assistant-text',
+          content: 'Your GTM Strategy document has been downloaded! The comprehensive strategy includes all sections with detailed analysis, financial targets, and strategic insights.',
+          sender: 'assistant',
+          timestamp: new Date(),
+          metadata: {
+            agentName: 'Campaign Strategy Agent',
+            agentColor: '#475569'
+          }
+        };
+        setMessages(prev => [...prev, downloadMessage]);
+        break;
+      }
+
+      case 'setup-tr-gtm-approval': {
+        // Handle TR GTM Approval Workflow Setup
+        console.log('Setting up TR GTM approval workflow');
+
+        // For demo purposes, simulate approval workflow setup with predefined approvers
+        const approvalId = `tr-gtm-${Date.now()}`;
+
+        // Create mock approvers
+        const approvers = [
+          {
+            name: 'Sarah Johnson',
+            email: 'sarah.johnson@thomsonreuters.com',
+            title: 'VP of Marketing',
+            status: 'pending' as const,
+            approvedAt: null
+          },
+          {
+            name: 'Michael Chen',
+            email: 'michael.chen@thomsonreuters.com',
+            title: 'Chief Revenue Officer',
+            status: 'pending' as const,
+            approvedAt: null
+          }
+        ];
+
+        // Create approval request
+        const approvalRequest = {
+          id: approvalId,
+          documentId: 'tr-gtm-strategy',
+          documentTitle: 'Thomson Reuters GTM Strategy Document',
+          requestedBy: 'Marketing Team',
+          requestedAt: new Date(),
+          dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
+          approvers: approvers,
+          comments: 'Please review and approve the Thomson Reuters GTM Strategy document covering Strategic Definition and Financial Targets.',
+          status: 'pending' as const
+        };
+
+        // Save to localStorage
+        localStorage.setItem(`approval-${approvalId}`, JSON.stringify(approvalRequest));
+
+        // Generate approval link
+        const approvalLink = `${window.location.origin}/approvals/${approvalId}`;
+
+        const approverNames = approvers.map(a => `${a.name} (${a.title})`).join(', ');
+
+        const confirmationMessage: Message = {
+          id: generateMessageId(),
+          type: 'assistant-text',
+          content: `Perfect! Approval workflow has been created and sent to ${approverNames}.\n\nThey will receive email notifications with a link to review and approve the GTM Strategy document. The approval is due within 3 days.`,
+          sender: 'assistant',
+          timestamp: new Date(),
+          metadata: {
+            agentName: 'Campaign Strategy Agent',
+            agentColor: '#475569',
+            actions: [
+              { label: 'Open Approval Portal', variant: 'primary' as const, action: `open-approval-${approvalId}` },
+              { label: 'Copy Approval Link', variant: 'outline' as const, action: `copy-approval-${approvalId}` }
+            ]
+          }
+        };
+        setMessages(prev => [...prev, confirmationMessage]);
+        break;
+      }
+
       default:
-        // Handle dynamic approval actions
-        if (actionLabel.startsWith('open-approval-')) {
+        // Handle TR GTM section actions
+        if (actionLabel.startsWith('tr-gtm-section-')) {
+          const sectionId = parseInt(actionLabel.replace('tr-gtm-section-', ''));
+
+          // Section 1: Strategic Definition
+          if (sectionId === 1) {
+            const section1Questions: Message = {
+              id: 'tr-gtm-section1-questions',
+              type: 'question',
+              content: '',
+              sender: 'assistant',
+              timestamp: new Date(),
+              metadata: {
+                questions: ['What business challenge are you trying to solve?'],
+                questionOptions: [
+                  {
+                    question: 'What business challenge are you trying to solve?',
+                    options: [
+                      'Increase market share in existing segments',
+                      'Enter new geographic markets',
+                      'Launch new product/solution',
+                      'Competitive displacement',
+                      'Digital transformation acceleration',
+                      'Regulatory compliance modernization'
+                    ]
+                  }
+                ]
+              }
+            };
+            setMessages(prev => [...prev, section1Questions]);
+          }
+
+          // Section 2: Financial Targets
+          if (sectionId === 2) {
+            const section2Questions: Message = {
+              id: 'tr-gtm-section2-questions',
+              type: 'question',
+              content: '',
+              sender: 'assistant',
+              timestamp: new Date(),
+              metadata: {
+                questions: ['What are your primary financial objectives for this GTM strategy?'],
+                questionOptions: [
+                  {
+                    question: 'What are your primary financial objectives for this GTM strategy?',
+                    options: [
+                      'Revenue growth ($X to $Y over 12-24 months)',
+                      'Pipeline generation ($ value and # of opportunities)',
+                      'Customer acquisition cost (CAC) optimization',
+                      'Average deal size expansion',
+                      'Customer lifetime value (LTV) improvement',
+                      'Market share percentage point gains'
+                    ]
+                  }
+                ]
+              }
+            };
+            setMessages(prev => [...prev, section2Questions]);
+          }
+
+        } else if (actionLabel.startsWith('open-approval-')) {
           const approvalId = actionLabel.replace('open-approval-', '');
           const approvalLink = `${window.location.origin}/approvals/${approvalId}`;
           window.open(approvalLink, '_blank');
@@ -1363,6 +2026,17 @@ export default function ChatLayout() {
             isLoading={isLoading}
             onSendMessage={handleSendMessage}
             onActionClick={handleActionClick}
+          />
+        ) : isTRGTMMode ? (
+          /* TR GTM Strategy Interface - Split View */
+          <TRGTMInterface
+            messages={messages}
+            isLoading={isLoading}
+            onSendMessage={handleSendMessage}
+            onActionClick={handleActionClick}
+            documentSections={trGTMDocumentSections}
+            vocInsights={trGTMVOCInsights}
+            conflictAlerts={trGTMConflictAlerts}
           />
         ) : (
           /* Conversation Area - Full Width, Scrollable */

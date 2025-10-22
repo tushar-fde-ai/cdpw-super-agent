@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { DocumentViewerModal } from '../../components/chat/document-viewer';
 import { sampleCampaignBrief } from '../../components/chat/document-viewer/sampleData';
-import { Rocket, Target, BarChart3, Sparkles, Lightbulb, Bot, Link, Clock, CheckCircle, AlertCircle, Users, FileText, Calendar, MessageCircle, Search, Zap, Palette, User, Layout, Database, PenTool, Type, BrainCircuit, Share2, Monitor } from 'lucide-react';
+import { Rocket, Target, BarChart3, Sparkles, Lightbulb, Bot, Link, Clock, CheckCircle, AlertCircle, Users, FileText, Calendar, MessageCircle, Search, Zap, Palette, User, Layout, Database, PenTool, Type, BrainCircuit, Share2, Monitor, TrendingUp } from 'lucide-react';
 
 export default function StartPage() {
   const router = useRouter();
@@ -83,6 +83,9 @@ export default function StartPage() {
       setHasRunningActivities(true); // Show running activities after starting campaign
       localStorage.setItem('msa_has_campaigns', 'true'); // Persist campaign state
       handleStarterClick('I have a Halloween themed campaign that should deploy two weeks before Halloween');
+    } else if (action === 'tr-gtm-strategy') {
+      // Navigate to TR GTM Strategy flow
+      router.push('/chat?mode=tr-gtm');
     } else {
       // For now, just go to chat page for other actions
       router.push('/chat');
@@ -243,12 +246,13 @@ export default function StartPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { id: 1, label: 'Design a Campaign Program', icon: 'Target', action: 'halloween-campaign' },
-                { id: 2, label: 'Pick My Channel Mix', icon: 'BarChart3', action: 'default' },
+                { id: 2, label: 'Create a GTM Strategy', icon: 'TrendingUp', action: 'tr-gtm-strategy' },
                 { id: 3, label: 'Create a Creative Brief', icon: 'Sparkles', action: 'default' },
                 { id: 4, label: 'Brainstorm creative ideas', icon: 'Lightbulb', action: 'default' }
               ].map((task) => {
                 const iconMap = {
                   Target: Target,
+                  TrendingUp: TrendingUp,
                   BarChart3: BarChart3,
                   Sparkles: Sparkles,
                   Lightbulb: Lightbulb
