@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { DocumentViewerModal } from '../../components/chat/document-viewer';
 import { sampleCampaignBrief } from '../../components/chat/document-viewer/sampleData';
 import TaskDetailModal from '../../components/start/TaskDetailModal';
-import { Rocket, Target, BarChart3, Sparkles, Lightbulb, Bot, Link, Clock, CheckCircle, AlertCircle, Users, FileText, Calendar, MessageCircle, Search, Zap, Palette, User, Layout, Database, PenTool, Type, BrainCircuit, Share2, Monitor } from 'lucide-react';
+import { Rocket, Target, BarChart3, Sparkles, Lightbulb, Bot, Link, Clock, CheckCircle, AlertCircle, Users, FileText, Calendar, MessageCircle, Search, Zap, Palette, User, Layout, Database, PenTool, Type, BrainCircuit, Share2, Monitor, TrendingUp } from 'lucide-react';
 
 export default function StartPage() {
   const router = useRouter();
@@ -86,6 +86,9 @@ export default function StartPage() {
       setHasRunningActivities(true); // Show running activities after starting campaign
       localStorage.setItem('msa_has_campaigns', 'true'); // Persist campaign state
       handleStarterClick('I have a Halloween themed campaign that should deploy two weeks before Halloween');
+    } else if (action === 'tr-gtm') {
+      // Navigate to TR GTM Strategy mode
+      router.push('/chat?mode=tr-gtm');
     } else {
       // For now, just go to chat page for other actions
       router.push('/chat');
@@ -207,27 +210,45 @@ export default function StartPage() {
 
   return (
     <div className="min-h-screen bg-white p-8 pt-16">
+      {/* Top Left Marketing Super Agent with TD Logo */}
+      <motion.div
+        className="absolute top-4 left-8 flex items-center gap-3"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="relative w-8 h-8">
+          <Image
+            src="/logos/td-icon.png"
+            alt="TD Logo"
+            fill
+            className="object-contain"
+            priority
+          />
+        </div>
+        <h1 className="text-xl font-medium text-gray-700 tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+          Marketing Super Agent
+        </h1>
+      </motion.div>
+
       <div className="max-w-6xl mx-auto">
-        {/* Logo Header */}
+        {/* Thomson Reuters Logo Header */}
         <motion.div
           className="mb-8 pb-6 border-b border-gray-200"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="flex items-center justify-center gap-4">
-            <div className="relative w-16 h-16">
+          <div className="flex items-center justify-center">
+            <div className="relative w-56 h-14">
               <Image
-                src="/logos/td-icon.png"
-                alt="TD Logo"
+                src="/logos/Thomson_Reuters_logo.svg"
+                alt="Thomson Reuters Logo"
                 fill
                 className="object-contain"
                 priority
               />
             </div>
-            <h1 className="text-3xl font-semibold text-black tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
-              Marketing Super Agent
-            </h1>
           </div>
         </motion.div>
 
@@ -309,13 +330,15 @@ export default function StartPage() {
                 { id: 1, label: 'Design a Campaign Program', icon: 'Target', action: 'halloween-campaign' },
                 { id: 2, label: 'Pick My Channel Mix', icon: 'BarChart3', action: 'default' },
                 { id: 3, label: 'Create a Creative Brief', icon: 'Sparkles', action: 'default' },
-                { id: 4, label: 'Brainstorm creative ideas', icon: 'Lightbulb', action: 'default' }
+                { id: 4, label: 'Brainstorm creative ideas', icon: 'Lightbulb', action: 'default' },
+                { id: 5, label: 'Build a GTM Strategy', icon: 'TrendingUp', action: 'tr-gtm' }
               ].map((task) => {
                 const iconMap = {
                   Target: Target,
                   BarChart3: BarChart3,
                   Sparkles: Sparkles,
-                  Lightbulb: Lightbulb
+                  Lightbulb: Lightbulb,
+                  TrendingUp: TrendingUp
                 };
                 const IconComponent = iconMap[task.icon as keyof typeof iconMap];
 
@@ -383,18 +406,19 @@ export default function StartPage() {
             </h3>
             <div className="grid grid-cols-3 gap-4">
               {[
-                { name: 'Mailchimp', logo: '/logos/mailchimp.png' },
-                { name: 'Google Analytics', logo: '/logos/Logo_Google_Analytics.svg' },
-                { name: 'Google Ads', logo: '/logos/Google_Ads_logo.svg' },
-                { name: 'HubSpot', logo: '/logos/HubSpot_Logo.svg' },
-                { name: 'Slack', logo: '/logos/SLA-Slack-from-Salesforce-logo.png' },
-                { name: 'Zapier', logo: '/logos/zapier-logo_black.svg' },
-                { name: 'Airtable', logo: '/logos/Airtable-Logo-Color.png' },
-                { name: 'Marketo', logo: '/logos/Marketo_Company_Logo.png' },
-                { name: 'Amazon Ads', logo: '/logos/amazon-ads.png' }
+                { name: 'Anaplan', logo: '/logos/Anaplan_Logo.svg' },
+                { name: 'Adobe', logo: '/logos/Adobe_Logo.svg' },
+                { name: '6sense', logo: '/logos/6sense_Logo.svg' },
+                { name: 'Eloqua', logo: '/logos/Eloqua_Logo.svg' },
+                { name: 'ON24', logo: '/logos/ON24_logo.png' },
+                { name: 'Salesforce', logo: '/logos/Salesforce_Logo.jpeg' }
               ].map((app, index) => (
                 <div key={index} className="flex items-center justify-center p-4 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
-                  <div className={`relative ${app.name === 'Mailchimp' || app.name === 'Google Ads' ? 'w-32 h-12' : 'w-24 h-8'} flex items-center justify-center ${app.name === 'Amazon Ads' ? 'bg-gray-800 rounded px-2' : ''}`}>
+                  <div className={`relative flex items-center justify-center ${
+                    app.name === 'Salesforce' || app.name === 'ON24'
+                      ? 'w-32 h-12'
+                      : 'w-24 h-8'
+                  }`}>
                     <Image
                       src={app.logo}
                       alt={app.name}

@@ -13,6 +13,10 @@ export default function DocumentViewerModal({ isOpen, onClose, document: campaig
   const [showApprovalPanel, setShowApprovalPanel] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [hasApprovalWorkflow, setHasApprovalWorkflow] = useState(campaignDocument.status !== 'draft');
+  const [currentDocument, setCurrentDocument] = useState(campaignDocument);
+
+  // Check if we're in approval portal context (URL contains '/approvals/')
+  const isInApprovalPortal = typeof window !== 'undefined' && window.location.pathname.includes('/approvals/');
 
   // Handle escape key
   useEffect(() => {
@@ -185,6 +189,12 @@ export default function DocumentViewerModal({ isOpen, onClose, document: campaig
     setShowApprovalPanel(false);
   };
 
+  const handleDocumentUpdate = (updatedDocument: typeof campaignDocument) => {
+    setCurrentDocument(updatedDocument);
+    // In a real app, you would save this to your backend
+    console.log('Document updated:', updatedDocument);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -256,7 +266,11 @@ export default function DocumentViewerModal({ isOpen, onClose, document: campaig
           <div className="flex h-[calc(100%-88px)]">
             {/* Document Content - Left Side (70%) */}
             <div className="flex-1 min-w-0">
-              <DocumentContent document={campaignDocument} />
+              <DocumentContent
+                document={currentDocument}
+                allowEditing={isInApprovalPortal}
+                onDocumentUpdate={handleDocumentUpdate}
+              />
             </div>
 
             {/* Sidebar - Right Side (30%) */}
@@ -272,7 +286,7 @@ export default function DocumentViewerModal({ isOpen, onClose, document: campaig
                 ) : (
                   <DocumentSidebar
                     key="document-sidebar"
-                    document={campaignDocument}
+                    document={currentDocument}
                     onAction={handleSidebarAction}
                     hasApprovalWorkflow={hasApprovalWorkflow}
                   />

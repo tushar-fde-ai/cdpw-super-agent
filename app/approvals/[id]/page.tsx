@@ -116,6 +116,47 @@ export default function ApprovalPage() {
     };
   };
 
+  // Helper function to generate GTM strategy document
+  const generateGTMDocument = () => {
+    // Create mock GTM sections - in a real app, these would come from the stored document
+    const mockGTMSections = [
+      {
+        id: 'strategic-definition',
+        heading: 'Strategic Definition',
+        content: 'Tax & Accounting Professionals\n\nObjective\nExpand Thomson Reuters market presence in the North American tax and accounting professional market through targeted go-to-market strategies and enhanced product positioning.\n\nTarget Customer Profile\n• Solo practitioners and small CPA firms (1-10 employees)\n• Mid-market accounting firms (11-100 employees) \n• Tax preparation franchises and chains\n• Corporate tax departments in mid-market companies\n\nUnique Value Proposition\n"Empower tax and accounting professionals with the most comprehensive, accurate, and timely tax research and compliance solutions in the market."\n\nStrategic Rationale\n• Growing complexity in tax regulations creates increased demand for specialized research tools\n• Digital transformation in accounting practices accelerates adoption of cloud-based solutions\n• Market consolidation presents opportunities for technology-enabled differentiation'
+      },
+      {
+        id: 'financial-targets',
+        heading: 'Financial Targets',
+        content: 'METRICS_DASHBOARD'
+      },
+      {
+        id: 'audience-personas',
+        heading: 'Audience and Personas',
+        content: 'TARGET_PERSONAS'
+      },
+      {
+        id: 'pipeline-funnel',
+        heading: 'Pipeline & Funnel',
+        content: 'PIPELINE_FUNNEL'
+      },
+      {
+        id: 'budget-allocation',
+        heading: 'Budget Allocation',
+        content: 'BUDGET_ALLOCATION'
+      }
+    ];
+
+    return {
+      id: 'tr-gtm-strategy',
+      title: 'Thomson Reuters GTM Strategy Document',
+      type: 'strategy-doc' as const,
+      content: mockGTMSections,
+      createdAt: new Date(),
+      status: 'pending-approval' as const
+    };
+  };
+
   const handleApprove = async () => {
     if (!approval) return;
 
@@ -233,7 +274,10 @@ export default function ApprovalPage() {
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-2xl font-bold text-white mb-2">
-                Campaign Approval Request
+                {approval.documentId === 'tr-gtm-strategy'
+                  ? 'GTM Strategy Approval Request'
+                  : 'Campaign Approval Request'
+                }
               </h1>
               <p className="text-slate-300">{approval.documentTitle}</p>
             </div>
@@ -515,7 +559,11 @@ export default function ApprovalPage() {
         <DocumentViewerModal
           isOpen={isDocumentViewerOpen}
           onClose={() => setIsDocumentViewerOpen(false)}
-          document={generateCampaignBrief(approval.campaignBudget)}
+          document={
+            approval.documentId === 'tr-gtm-strategy'
+              ? generateGTMDocument()
+              : generateCampaignBrief(approval.campaignBudget)
+          }
           onActionClick={() => {}}
         />
       )}

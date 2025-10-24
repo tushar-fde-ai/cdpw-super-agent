@@ -65,7 +65,7 @@ export default function MessageInput({
   };
 
   const handleSendMessage = () => {
-    if (inputMessage.trim() && !disabled) {
+    if ((inputMessage.trim() || attachedFile) && !disabled) {
       onSendMessage(inputMessage.trim(), attachedFile || undefined);
       setInputMessage('');
       setAttachedFile(null);
@@ -158,16 +158,16 @@ export default function MessageInput({
         {/* Send button */}
         <motion.button
           onClick={handleSendMessage}
-          disabled={disabled || !inputMessage.trim()}
+          disabled={disabled || (!inputMessage.trim() && !attachedFile)}
           className={`
             flex-shrink-0 p-2 rounded-md transition-all duration-200
-            ${inputMessage.trim() && !disabled
+            ${(inputMessage.trim() || attachedFile) && !disabled
               ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm hover:shadow-md'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }
           `}
-          whileHover={inputMessage.trim() && !disabled ? { scale: 1.05 } : {}}
-          whileTap={inputMessage.trim() && !disabled ? { scale: 0.95 } : {}}
+          whileHover={(inputMessage.trim() || attachedFile) && !disabled ? { scale: 1.05 } : {}}
+          whileTap={(inputMessage.trim() || attachedFile) && !disabled ? { scale: 0.95 } : {}}
           aria-label="Send message"
           title="Send message (Enter)"
         >

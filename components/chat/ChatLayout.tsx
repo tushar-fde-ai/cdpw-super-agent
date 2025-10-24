@@ -272,6 +272,22 @@ export default function ChatLayout() {
     };
   };
 
+  // Helper function to generate GTM strategy document from sections
+  const generateGTMDocument = (sections: Array<{id: number, title: string, content: string}>) => {
+    return {
+      id: 'tr-gtm-strategy',
+      title: 'Thomson Reuters GTM Strategy Document',
+      type: 'strategy-doc' as const,
+      content: sections.map(section => ({
+        id: `gtm-section-${section.id}`,
+        heading: section.title,
+        content: section.content
+      })),
+      createdAt: new Date(),
+      status: 'pending-approval' as const
+    };
+  };
+
   // Handle sending new messages
   const handleSendMessage = useCallback(async (content: string, attachment?: File) => {
     // If there's an attachment, show it in the user message
@@ -478,6 +494,507 @@ export default function ChatLayout() {
       // Handle TR GTM Strategy responses
       setIsLoading(true);
 
+      // Check if this is a GTM brief analysis request FIRST (before other processing)
+      if (content.toLowerCase().includes('analyze') || content.toLowerCase().includes('summarize')) {
+          // Start comprehensive GTM analysis
+          const analysisIntro: Message = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: 'Perfect! I\'m now analyzing your GTM strategy brief. My specialist agents are extracting key data and generating a comprehensive campaign summary with all strategic elements...',
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Document Processing Agent',
+              agentColor: '#475569'
+            }
+          };
+          setMessages(prev => [...prev, analysisIntro]);
+
+          // Show agent orchestration
+          setTimeout(() => {
+            const extractionMsg: Message = {
+              id: generateMessageId(),
+              type: 'assistant-text',
+              content: 'Extracting data from PDF: Campaign objectives, financial targets, market opportunity, competitive landscape, audience segments...',
+              sender: 'assistant',
+              timestamp: new Date(),
+              metadata: {
+                agentName: 'Document Processing Agent',
+                agentColor: '#8b5cf6'
+              }
+            };
+            setMessages(prev => [...prev, extractionMsg]);
+
+            setTimeout(() => {
+              const strategyMsg: Message = {
+                id: generateMessageId(),
+                type: 'assistant-text',
+                content: 'Analyzing GTM strategy pillars, messaging framework, and competitive positioning...',
+                sender: 'assistant',
+                timestamp: new Date(),
+                metadata: {
+                  agentName: 'Campaign Strategy Agent',
+                  agentColor: '#475569'
+                }
+              };
+              setMessages(prev => [...prev, strategyMsg]);
+
+              setTimeout(() => {
+                const analyticsMsg: Message = {
+                  id: generateMessageId(),
+                  type: 'assistant-text',
+                  content: 'Calculating pipeline projections, funnel metrics, and ROI forecasts...',
+                  sender: 'assistant',
+                  timestamp: new Date(),
+                  metadata: {
+                    agentName: 'Data Analytics Agent',
+                    agentColor: '#14b8a6'
+                  }
+                };
+                setMessages(prev => [...prev, analyticsMsg]);
+
+                setTimeout(() => {
+                  const personaMsg: Message = {
+                    id: generateMessageId(),
+                    type: 'assistant-text',
+                    content: 'Building detailed persona profiles for each market segment...',
+                    sender: 'assistant',
+                    timestamp: new Date(),
+                    metadata: {
+                      agentName: 'Audience & Persona Agent',
+                      agentColor: '#ec4899'
+                    }
+                  };
+                  setMessages(prev => [...prev, personaMsg]);
+
+                  // Generate the comprehensive summary on the right panel
+                  setTimeout(() => {
+                    // Instead of a huge text message, populate the document sections
+                    const dashboardSections = [
+                      {
+                        id: 1,
+                        title: 'Executive Summary',
+                        content: `**Campaign Focus:** Legal Research Q2 2025 - Westlaw Precision with CoCounsel, Practical Law
+
+**Primary Objective:** Establish TR as market-leading source for trusted GenAI legal assistance
+
+**Key Theme:** "Win the AI Race"
+
+**Campaign Period:** Q2 2025 (April - June)`
+                      },
+                      {
+                        id: 2,
+                        title: 'Key Metrics Dashboard',
+                        content: 'METRICS_DASHBOARD' // Special marker for metric tiles
+                      },
+                      {
+                        id: 3,
+                        title: 'Strategic Overview',
+                        content: `**Business Challenge:**
+Maintain market leadership in legal research while establishing category dominance in GenAI-powered legal assistance before competitors erode TR's trusted advisor status.
+
+**Strategic Imperatives:**
+• Accelerate CoCounsel adoption integrated with Westlaw Precision
+• Drive upgrades from legacy Westlaw to Westlaw Precision
+• Acquire net new customers with AI-first positioning
+• Launch Practical Law enhancements`
+                      },
+                      {
+                        id: 4,
+                        title: 'Market Opportunity',
+                        content: 'MARKET_OPPORTUNITY' // Special marker for segment breakdown
+                      },
+                      {
+                        id: 5,
+                        title: 'Go-to-Market Strategy',
+                        content: `**Primary Strategy Pillars:**
+
+**1. AI Leadership Positioning**
+Own "Win the AI Race" narrative across all channels with 12 executive bylines and 50 customer proof points
+
+**2. Product-Led Growth**
+Free 30-day trials for Westlaw Precision + CoCounsel with self-serve onboarding for small firms
+
+**3. Account-Based Marketing**
+Target 200 high-value accounts (GLLF, LPC) with personalized campaigns and executive engagement
+
+**4. Competitive Displacement**
+Switch campaigns targeting Lexis+ AI and Harvey customers with "Why TR?" comparison content`
+                      },
+                      {
+                        id: 6,
+                        title: 'Competitive Landscape',
+                        content: `**Primary Competitors:**
+
+**Lexis+ AI:** #2 in legal research, late to GenAI (18% hallucination rate)
+**Harvey AI:** GenAI specialist, $80M Series B, modern UX but limited content
+**Casetext:** Acquired by TR - competitive neutralization
+**vLex:** International focus, price competition
+
+**TR Competitive Advantages:**
+• 60M+ legal documents vs 10-30M competitors
+• <2% hallucination rate vs 15-20%
+• 150-year trusted brand authority
+• 1.2M existing Westlaw users`
+                      },
+                      {
+                        id: 5,
+                        title: 'Audience and Personas',
+                        content: 'TARGET_PERSONAS' // Special marker for persona cards
+                      },
+                      {
+                        id: 7,
+                        title: 'Pipeline & Funnel',
+                        content: 'PIPELINE_FUNNEL' // Special marker for funnel visualization
+                      },
+                      {
+                        id: 9,
+                        title: 'Budget Allocation',
+                        content: 'BUDGET_ALLOCATION' // Special marker for budget breakdown
+                      },
+                      {
+                        id: 10,
+                        title: 'Campaign Timeline',
+                        content: `**April 2025:**
+Week 1: CoCounsel product announcement + webinar launch
+Week 2-3: ABA Techshow (target: 400 leads)
+Week 4: Content blitz + 6 nurture campaigns
+
+**May 2025:**
+Week 1: Legaltech New York (Platinum sponsor)
+Week 2: Practical Law product refresh
+Week 3-4: Regional CLE events (4 cities)
+
+**June 2025:**
+Week 1-2: End-of-quarter push + deal acceleration
+Week 3: Customer success stories + advocacy launch
+Week 4: Q2 wrap-up + Q3 planning`
+                      },
+                      {
+                        id: 11,
+                        title: 'Strategic Recommendations',
+                        content: 'RECOMMENDATIONS' // Special marker for recommendation cards
+                      },
+                      {
+                        id: 12,
+                        title: 'Success Factors & Risks',
+                        content: `**Success Factors:**
+✅ Executive alignment across CRO, VP Sales, VP Marketing
+✅ Sales enablement training completed
+✅ Product readiness - CoCounsel GA release
+
+**Key Risks & Mitigation:**
+⚠️ **Competitive Pricing:** Launch AI Starter tier at $12K
+⚠️ **Enterprise Deal Cycles:** Front-load MLF/LPC segments
+⚠️ **GenAI Accuracy Concerns:** Publicize <2% hallucination rate`
+                      }
+                    ];
+
+                    setTRGTMDocumentSections(dashboardSections);
+
+                    const summaryMsg: Message = {
+                      id: generateMessageId(),
+                      type: 'assistant-text',
+                      content: `# GTM Campaign Analysis Complete!
+
+I've generated a comprehensive campaign dashboard on the right panel with all key strategic elements organized into 12 sections:
+
+✅ Executive Summary with campaign focus and objectives
+✅ Key Metrics Dashboard with pipeline, revenue, and efficiency targets
+✅ Strategic Overview and market opportunity breakdown
+✅ Go-to-Market strategy pillars and competitive analysis
+✅ Budget allocation and campaign timeline
+✅ Strategic recommendations and risk mitigation
+
+**Total Addressable Market:** $5.0B+ annually across 5 segments
+**Q2 Pipeline Target:** $24.8M
+**Marketing CWD Target:** $39M
+
+⚠️ **Missing Sections:**
+❌ Target Personas
+❌ Pipeline & Funnel
+
+The dashboard view on the right provides an executive-level overview optimized for stakeholder presentations and decision-making.`,
+                      sender: 'assistant',
+                      timestamp: new Date(),
+                      metadata: {
+                        agentName: 'Campaign Strategy Agent',
+                        agentColor: '#475569'
+                      }
+                    };
+
+                    setMessages(prev => [...prev, summaryMsg]);
+
+                    // Ask about setting up Target Personas
+                    setTimeout(() => {
+                      const personaPrompt: Message = {
+                        id: generateMessageId(),
+                        type: 'assistant-text',
+                        content: `Would you like me to set up **Target Personas** for this campaign? I can create detailed buyer personas based on the market segments we've identified.`,
+                        sender: 'assistant',
+                        timestamp: new Date(),
+                        metadata: {
+                          agentName: 'Audience & Persona Agent',
+                          agentColor: '#475569',
+                          actions: [
+                            { label: 'Yes, Set Up Target Personas', variant: 'primary' as const, action: 'setup-personas' },
+                            { label: 'Skip for Now', variant: 'outline' as const, action: 'skip-personas' }
+                          ]
+                        }
+                      };
+                      setMessages(prev => [...prev, personaPrompt]);
+                    }, 1500);
+
+                    setIsLoading(false);
+                  }, 2500);
+                }, 2000);
+              }, 2000);
+            }, 2000);
+          }, 2000);
+        return;
+      }
+
+      // Handle Target Personas setup
+      if (content.toLowerCase().includes('yes') && content.toLowerCase().includes('personas')) {
+        setIsLoading(true);
+
+        const processingMsg: Message = {
+          id: generateMessageId(),
+          type: 'assistant-text',
+          content: 'Perfect! I\'m creating detailed target personas based on the market segments...',
+          sender: 'assistant',
+          timestamp: new Date(),
+          metadata: {
+            agentName: 'Audience & Persona Agent',
+            agentColor: '#475569'
+          }
+        };
+        setMessages(prev => [...prev, processingMsg]);
+
+        setTimeout(() => {
+          // Add Target Personas section to the document
+          const personasSection = {
+            id: 13,
+            title: 'Target Personas',
+            content: `**Persona 1: Emily Chen - Managing Partner at Mid-Size Firm**
+
+**Demographics:** 45 years old, Managing Partner, 150-attorney firm, Corporate Law focus
+
+**Goals:** Increase profitability, attract top talent, modernize firm operations
+
+**Challenges:** Rising overhead costs, pressure to match BigLaw resources, talent retention
+
+**Key Message:** "Deliver BigLaw capabilities at mid-market efficiency with AI-powered research"
+
+---
+
+**Persona 2: Marcus Rodriguez - Senior Associate at Large Firm**
+
+**Demographics:** 34 years old, Senior Associate (6th year), Litigation practice, partnership track
+
+**Goals:** Win cases, bill efficiently, make partner
+
+**Challenges:** Billable hour pressure, complex legal research, information overload
+
+**Key Message:** "Win the AI race—deliver better work product in half the time"
+
+---
+
+**Persona 3: Sarah Williams - General Counsel at Corporate Legal Dept**
+
+**Demographics:** 52 years old, General Counsel, $800M revenue company, team of 12 attorneys
+
+**Goals:** Reduce outside counsel spend, increase in-house capability
+
+**Challenges:** Budget cuts, expanding compliance requirements, limited headcount
+
+**Key Message:** "Cut outside counsel costs 40% while improving legal outcomes"`
+          };
+
+          setTRGTMDocumentSections(prev => [...prev, personasSection]);
+
+          const doneMsg: Message = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: `✅ **Target Personas Added!**
+
+I've added 3 detailed buyer personas to your GTM brief (see right panel):
+• Emily Chen - Managing Partner (Mid-Size Firm)
+• Marcus Rodriguez - Senior Associate (Large Firm)
+• Sarah Williams - General Counsel (Corporate)
+
+Each persona includes demographics, goals, challenges, and tailored messaging.`,
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Audience & Persona Agent',
+              agentColor: '#475569'
+            }
+          };
+          setMessages(prev => [...prev, doneMsg]);
+
+          // Ask about Pipeline & Funnel
+          setTimeout(() => {
+            const pipelinePrompt: Message = {
+              id: generateMessageId(),
+              type: 'assistant-text',
+              content: `Would you like me to set up **Pipeline & Funnel** metrics for this campaign? I can create detailed funnel projections and conversion targets.`,
+              sender: 'assistant',
+              timestamp: new Date(),
+              metadata: {
+                agentName: 'Data Analytics Agent',
+                agentColor: '#475569',
+                actions: [
+                  { label: 'Yes, Set Up Pipeline & Funnel', variant: 'primary' as const, action: 'setup-pipeline' },
+                  { label: 'Skip for Now', variant: 'outline' as const, action: 'skip-pipeline' }
+                ]
+              }
+            };
+            setMessages(prev => [...prev, pipelinePrompt]);
+          }, 1500);
+
+          setIsLoading(false);
+        }, 2500);
+        return;
+      }
+
+      // Handle Skip Personas
+      if (content.toLowerCase().includes('skip') && content.toLowerCase().includes('personas')) {
+        // Ask about Pipeline & Funnel directly
+        setTimeout(() => {
+          const pipelinePrompt: Message = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: `Would you like me to set up **Pipeline & Funnel** metrics for this campaign? I can create detailed funnel projections and conversion targets.`,
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Data Analytics Agent',
+              agentColor: '#475569',
+              actions: [
+                { label: 'Yes, Set Up Pipeline & Funnel', variant: 'primary' as const, action: 'setup-pipeline' },
+                { label: 'Skip for Now', variant: 'outline' as const, action: 'skip-pipeline' }
+              ]
+            }
+          };
+          setMessages(prev => [...prev, pipelinePrompt]);
+        }, 500);
+        return;
+      }
+
+      // Handle Pipeline & Funnel setup
+      if (content.toLowerCase().includes('yes') && content.toLowerCase().includes('pipeline')) {
+        setIsLoading(true);
+
+        const processingMsg: Message = {
+          id: generateMessageId(),
+          type: 'assistant-text',
+          content: 'Perfect! I\'m building out your pipeline and funnel metrics...',
+          sender: 'assistant',
+          timestamp: new Date(),
+          metadata: {
+            agentName: 'Data Analytics Agent',
+            agentColor: '#475569'
+          }
+        };
+        setMessages(prev => [...prev, processingMsg]);
+
+        setTimeout(() => {
+          // Add Pipeline & Funnel section to the document
+          const pipelineSection = {
+            id: 14,
+            title: 'Pipeline & Funnel',
+            content: `**Q2 2025 Pipeline Targets:**
+
+**MQLs:** 8,200 (Marketing Qualified Leads)
+**SQLs:** 3,444 (42% conversion)
+**Opportunities:** 1,894 (55% conversion)
+**Closed-Won:** 568 (30% conversion)
+**Pipeline Value:** $24.8M
+
+---
+
+**Velocity Metrics:**
+
+**Average Deal Size:** $43,600 (blended across segments)
+**Average Sales Cycle:** 67 days
+**MQL to Customer:** 18% overall conversion
+**Lead Nurture Cycle:** 18 days average
+
+---
+
+**Funnel Performance Benchmarks:**
+
+**Top of Funnel (Awareness)**
+• Website Traffic: 145,000 monthly visitors
+• Content Downloads: 12,500
+• Webinar Registrations: 3,800
+• Event Attendees: 2,100
+
+**Middle of Funnel (Consideration)**
+• Product Demo Requests: 4,200
+• Free Trial Starts: 2,800
+• Pricing Inquiries: 3,100
+
+**Bottom of Funnel (Decision)**
+• Sales Meetings Booked: 1,650
+• Proposals Delivered: 1,200
+• Final Negotiations: 720`
+          };
+
+          setTRGTMDocumentSections(prev => [...prev, pipelineSection]);
+
+          const doneMsg: Message = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: `✅ **Pipeline & Funnel Added!**
+
+I've added comprehensive funnel metrics to your GTM brief (see right panel):
+• Q2 Pipeline Targets: $24.8M across 8,200 MQLs
+• Velocity Metrics: 67-day average sales cycle
+• Funnel Benchmarks: Top, middle, and bottom of funnel KPIs
+
+Your GTM strategy brief is now complete! 🎉`,
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Data Analytics Agent',
+              agentColor: '#475569',
+              actions: [
+                { label: 'Export as PDF', variant: 'primary' as const, action: 'download-gtm-pdf' },
+                { label: 'Share with Team', variant: 'secondary' as const, action: 'share-brief' }
+              ]
+            }
+          };
+          setMessages(prev => [...prev, doneMsg]);
+          setIsLoading(false);
+        }, 2500);
+        return;
+      }
+
+      // Handle Skip Pipeline
+      if (content.toLowerCase().includes('skip') && content.toLowerCase().includes('pipeline')) {
+        const confirmMsg: Message = {
+          id: generateMessageId(),
+          type: 'assistant-text',
+          content: `No problem! Your GTM strategy brief is ready. You can always add Pipeline & Funnel metrics later if needed.
+
+**What would you like to do next?**`,
+          sender: 'assistant',
+          timestamp: new Date(),
+          metadata: {
+            agentName: 'Campaign Strategy Agent',
+            agentColor: '#475569',
+            actions: [
+              { label: 'Export as PDF', variant: 'primary' as const, action: 'download-gtm-pdf' },
+              { label: 'Share with Team', variant: 'secondary' as const, action: 'share-brief' }
+            ]
+          }
+        };
+        setMessages(prev => [...prev, confirmMsg]);
+        return;
+      }
+
       // Handle document upload
       if (attachment) {
         setGtmUploadedDocument({
@@ -489,7 +1006,7 @@ export default function ChatLayout() {
           const uploadAckMessage: Message = {
             id: generateMessageId(),
             type: 'assistant-text',
-            content: `Perfect! I've received your GTM strategy document (${attachment.name}). I'm analyzing the content to understand your current strategy and identify opportunities.\n\nBased on this document, I'll help you refine and expand your GTM strategy across all key sections. Would you like to start with:\n\n• Strategic Definition - Review and refine business objectives\n• Financial Targets - Update pipeline and revenue goals\n• Competitive Intelligence - Analyze market landscape and competitors`,
+            content: `Perfect! I've received your GTM strategy document (${attachment.name}). I'm analyzing the content to understand your current strategy and identify opportunities.\n\nTo generate a comprehensive campaign summary, please type: **"Analyze this GTM brief"** or **"Summarize this campaign"**\n\nOr you can start building your strategy section by section:`,
             sender: 'assistant',
             timestamp: new Date(),
             metadata: {
@@ -497,8 +1014,13 @@ export default function ChatLayout() {
               agentColor: '#475569',
               actions: [
                 {
-                  label: '1. Strategic Definition',
+                  label: 'Analyze GTM Brief',
                   variant: 'primary' as const,
+                  action: 'analyze-gtm-brief'
+                },
+                {
+                  label: '1. Strategic Definition',
+                  variant: 'outline' as const,
                   action: 'tr-gtm-section-1'
                 },
                 {
@@ -1891,101 +2413,16 @@ export default function ChatLayout() {
         break;
 
       case 'download-tr-gtm-report': {
-        // Handle GTM Strategy Report Download
-        console.log('Downloading TR GTM Strategy report');
-
-        // Generate HTML report
-        const reportHTML = generateTRGTMReport(trGTMDocumentSections, trGTMVOCInsights);
-
-        // Create downloadable file
-        const blob = new Blob([reportHTML], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `Thomson_Reuters_GTM_Strategy_${new Date().toISOString().split('T')[0]}.html`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        // Show confirmation message
-        const downloadMessage: Message = {
-          id: generateMessageId(),
-          type: 'assistant-text',
-          content: 'Your GTM Strategy document has been downloaded! The comprehensive strategy includes all sections with detailed analysis, financial targets, and strategic insights.',
-          sender: 'assistant',
-          timestamp: new Date(),
-          metadata: {
-            agentName: 'Campaign Strategy Agent',
-            agentColor: '#475569'
-          }
-        };
-        setMessages(prev => [...prev, downloadMessage]);
+        // Handle GTM Strategy Report Download - Open document viewer modal
+        console.log('Opening TR GTM Strategy document viewer');
+        setIsDocumentViewerOpen(true);
         break;
       }
 
       case 'setup-tr-gtm-approval': {
-        // Handle TR GTM Approval Workflow Setup
+        // Handle TR GTM Approval Workflow Setup - Open document viewer modal first
         console.log('Setting up TR GTM approval workflow');
-
-        // For demo purposes, simulate approval workflow setup with predefined approvers
-        const approvalId = `tr-gtm-${Date.now()}`;
-
-        // Create mock approvers
-        const approvers = [
-          {
-            name: 'Sarah Johnson',
-            email: 'sarah.johnson@thomsonreuters.com',
-            title: 'VP of Marketing',
-            status: 'pending' as const,
-            approvedAt: null
-          },
-          {
-            name: 'Michael Chen',
-            email: 'michael.chen@thomsonreuters.com',
-            title: 'Chief Revenue Officer',
-            status: 'pending' as const,
-            approvedAt: null
-          }
-        ];
-
-        // Create approval request
-        const approvalRequest = {
-          id: approvalId,
-          documentId: 'tr-gtm-strategy',
-          documentTitle: 'Thomson Reuters GTM Strategy Document',
-          requestedBy: 'Marketing Team',
-          requestedAt: new Date(),
-          dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-          approvers: approvers,
-          comments: 'Please review and approve the Thomson Reuters GTM Strategy document covering Strategic Definition and Financial Targets.',
-          status: 'pending' as const
-        };
-
-        // Save to localStorage
-        localStorage.setItem(`approval-${approvalId}`, JSON.stringify(approvalRequest));
-
-        // Generate approval link
-        const approvalLink = `${window.location.origin}/approvals/${approvalId}`;
-
-        const approverNames = approvers.map(a => `${a.name} (${a.title})`).join(', ');
-
-        const confirmationMessage: Message = {
-          id: generateMessageId(),
-          type: 'assistant-text',
-          content: `Perfect! Approval workflow has been created and sent to ${approverNames}.\n\nThey will receive email notifications with a link to review and approve the GTM Strategy document. The approval is due within 3 days.`,
-          sender: 'assistant',
-          timestamp: new Date(),
-          metadata: {
-            agentName: 'Campaign Strategy Agent',
-            agentColor: '#475569',
-            actions: [
-              { label: 'Open Approval Portal', variant: 'primary' as const, action: `open-approval-${approvalId}` },
-              { label: 'Copy Approval Link', variant: 'outline' as const, action: `copy-approval-${approvalId}` }
-            ]
-          }
-        };
-        setMessages(prev => [...prev, confirmationMessage]);
+        setIsDocumentViewerOpen(true);
         break;
       }
 
@@ -1993,6 +2430,36 @@ export default function ChatLayout() {
         // Navigate to competitive intelligence mode for GTM
         console.log('Opening GTM competitive intelligence');
         router.push('/chat?mode=gtm-competitive');
+        break;
+
+      case 'analyze-gtm-brief':
+        // Trigger GTM brief analysis
+        console.log('Analyzing GTM brief');
+        handleSendMessage('Analyze this GTM brief');
+        break;
+
+      case 'setup-personas':
+        // User wants to set up target personas
+        console.log('Setting up target personas');
+        handleSendMessage('Yes, set up target personas');
+        break;
+
+      case 'skip-personas':
+        // User skips personas, move to pipeline
+        console.log('Skipping personas');
+        handleSendMessage('Skip personas');
+        break;
+
+      case 'setup-pipeline':
+        // User wants to set up pipeline & funnel
+        console.log('Setting up pipeline & funnel');
+        handleSendMessage('Yes, set up pipeline and funnel');
+        break;
+
+      case 'skip-pipeline':
+        // User skips pipeline
+        console.log('Skipping pipeline');
+        handleSendMessage('Skip pipeline');
         break;
 
       default:
@@ -2158,7 +2625,11 @@ export default function ChatLayout() {
       <DocumentViewerModal
         isOpen={isDocumentViewerOpen}
         onClose={handleDocumentViewerClose}
-        document={generateCampaignBrief(campaignBudget)}
+        document={
+          searchParams.get('mode') === 'tr-gtm' && trGTMDocumentSections.length > 0
+            ? generateGTMDocument(trGTMDocumentSections)
+            : generateCampaignBrief(campaignBudget)
+        }
         onActionClick={handleActionClick}
       />
 

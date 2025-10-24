@@ -47,6 +47,8 @@ export interface DocumentViewerModalProps {
 
 export interface DocumentContentProps {
   document: Document;
+  allowEditing?: boolean;
+  onDocumentUpdate?: (updatedDocument: Document) => void;
 }
 
 export interface DocumentSidebarProps {

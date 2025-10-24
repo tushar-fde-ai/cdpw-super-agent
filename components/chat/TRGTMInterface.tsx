@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Target, Users, DollarSign, TrendingUp, Globe, Package, MessageSquare,
-  BarChart3, GitBranch, CheckCircle, AlertTriangle, Info, ChevronRight,
+  Target, Users, DollarSign, TrendingUp, Package, MessageSquare,
+  CheckCircle, AlertTriangle, Info,
   Building2, Clock, Award, ShieldCheck, Briefcase, FileText
 } from 'lucide-react';
 import { Message } from './messages/types';
@@ -24,6 +24,48 @@ interface TRGTMInterfaceProps {
   uploadedDocument?: { name: string; size: number };
 }
 
+// Helper function to parse markdown-style formatting
+const parseMarkdown = (text: string): React.ReactNode[] => {
+  const parts: React.ReactNode[] = [];
+  let currentIndex = 0;
+  const boldRegex = /\*\*(.+?)\*\*/g;
+  let match;
+
+  while ((match = boldRegex.exec(text)) !== null) {
+    // Add text before the bold part
+    if (match.index > currentIndex) {
+      parts.push(text.substring(currentIndex, match.index));
+    }
+    // Add the bold part
+    parts.push(<strong key={match.index} className="font-semibold text-slate-900">{match[1]}</strong>);
+    currentIndex = boldRegex.lastIndex;
+  }
+
+  // Add remaining text
+  if (currentIndex < text.length) {
+    parts.push(text.substring(currentIndex));
+  }
+
+  return parts.length > 0 ? parts : [text];
+};
+
+// Helper component to render dashboard metric tiles
+const MetricTile = ({ label, value, subtitle, icon: Icon }: {
+  label: string;
+  value: string;
+  subtitle?: string;
+  icon?: React.ComponentType<{ className?: string }>
+}) => (
+  <div className="bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div className="flex items-start justify-between mb-2">
+      <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{label}</span>
+      {Icon && <Icon className="w-4 h-4 text-slate-500" />}
+    </div>
+    <div className="text-2xl font-bold text-slate-900">{value}</div>
+    {subtitle && <div className="text-xs text-slate-600 mt-1">{subtitle}</div>}
+  </div>
+);
+
 export default function TRGTMInterface({
   messages,
   isLoading,
@@ -34,9 +76,6 @@ export default function TRGTMInterface({
   conflictAlerts: propConflictAlerts = {},
   uploadedDocument
 }: TRGTMInterfaceProps) {
-  const [currentSection, setCurrentSection] = useState<number>(0);
-  const [completedSections, setCompletedSections] = useState<number[]>([]);
-  const [sectionData, setSectionData] = useState<Record<number, any>>({});
   const [selectedInsightSection, setSelectedInsightSection] = useState<number>(1);
 
   // TR GTM Strategy Sections
@@ -91,27 +130,27 @@ export default function TRGTMInterface({
     },
     {
       id: 7,
-      title: 'Metrics and KPIs',
-      icon: <BarChart3 className="w-5 h-5" />,
-      color: 'text-cyan-600',
-      bgColor: 'bg-cyan-50',
-      description: 'Set success metrics and benchmarks'
-    },
-    {
-      id: 8,
-      title: 'Pipeline and Funnel',
-      icon: <GitBranch className="w-5 h-5" />,
+      title: 'Pipeline & Funnel',
+      icon: <TrendingUp className="w-5 h-5" />,
       color: 'text-teal-600',
       bgColor: 'bg-teal-50',
       description: 'Model pipeline and conversion funnel'
     },
     {
-      id: 9,
+      id: 8,
       title: 'Competitive Analysis',
       icon: <Award className="w-5 h-5" />,
       color: 'text-amber-600',
       bgColor: 'bg-amber-50',
       description: 'Analyze competitive landscape'
+    },
+    {
+      id: 9,
+      title: 'Budget Allocation',
+      icon: <DollarSign className="w-5 h-5" />,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      description: 'Marketing budget and channel investment'
     },
     {
       id: 10,
@@ -123,16 +162,6 @@ export default function TRGTMInterface({
     }
   ];
 
-  const handleSectionClick = (sectionId: number) => {
-    setCurrentSection(sectionId);
-  };
-
-  const handleNextSection = () => {
-    if (currentSection < sections.length) {
-      setCompletedSections(prev => [...prev, currentSection]);
-      setCurrentSection(currentSection + 1);
-    }
-  };
 
   const handleQuestionSubmit = (answers: string[]) => {
     // If multiple answers, send them as a combined message
@@ -159,24 +188,6 @@ export default function TRGTMInterface({
           </p>
         </div>
 
-        {/* Section Header */}
-        {currentSection > 0 && currentSection <= sections.length && (
-          <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-white">
-            <div className="flex items-center gap-2">
-              <div className={`p-1.5 rounded-lg ${sections[currentSection - 1].bgColor}`}>
-                {sections[currentSection - 1].icon}
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-gray-900">
-                  {sections[currentSection - 1].title}
-                </h3>
-                <p className="text-xs text-gray-600">
-                  Section {currentSection} of {sections.length}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
@@ -248,7 +259,7 @@ export default function TRGTMInterface({
           )}
           <MessageInput
             onSendMessage={onSendMessage}
-            isLoading={isLoading}
+            disabled={isLoading}
             placeholder="Type your response or click a suggested answer..."
             allowAttachments={!uploadedDocument}
           />
@@ -269,14 +280,6 @@ export default function TRGTMInterface({
                 Enterprise Go-to-Market Planning Document
               </p>
             </div>
-            {propDocumentSections.length > 0 && (
-              <div className="text-right">
-                <div className="text-xs text-slate-300">Sections Complete</div>
-                <div className="text-2xl font-bold text-white">
-                  {propDocumentSections.length} / {sections.length}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -289,6 +292,7 @@ export default function TRGTMInterface({
             />
           </div>
         </div>
+
 
         {/* Document Content */}
         <div className="flex-1 overflow-y-auto p-6">
@@ -334,9 +338,19 @@ export default function TRGTMInterface({
                     className="pb-6 border-b border-gray-200 last:border-0"
                   >
                     <div className="flex items-start gap-3 mb-4">
-                      <div className={`p-2 rounded-lg ${sections[docSection.id - 1].bgColor}`}>
-                        {sections[docSection.id - 1].icon}
-                      </div>
+                      {/* Use section config if available, otherwise use default FileText icon */}
+                      {(() => {
+                        const sectionConfig = sections.find(s => s.id === docSection.id);
+                        return sectionConfig ? (
+                          <div className={`p-2 rounded-lg ${sectionConfig.bgColor}`}>
+                            {sectionConfig.icon}
+                          </div>
+                        ) : (
+                          <div className="p-2 rounded-lg bg-slate-50">
+                            <FileText className="w-5 h-5 text-slate-600" />
+                          </div>
+                        );
+                      })()}
                       <div>
                         <h3 className="text-xl font-bold text-gray-900">
                           {index + 1}. {docSection.title}
@@ -345,7 +359,156 @@ export default function TRGTMInterface({
                     </div>
                     <div className="pl-14">
                       <div className="max-w-none">
-                        {docSection.content.split('\n\n').map((paragraph, pIndex) => {
+                        {/* Check if this is a special content marker */}
+                        {docSection.content === 'METRICS_DASHBOARD' ? (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <MetricTile label="Pipeline Target" value="$24.8M" subtitle="Q2 2025" icon={TrendingUp} />
+                            <MetricTile label="Marketing CWD" value="$39M" subtitle="25% of annual" icon={DollarSign} />
+                            <MetricTile label="Marketing Budget" value="$2.9M" subtitle="Q2 allocation" icon={Briefcase} />
+                            <MetricTile label="MQL Target" value="8,200" subtitle="Marketing qualified leads" icon={Users} />
+                            <MetricTile label="SQL Target" value="3,444" subtitle="42% conversion" icon={Target} />
+                            <MetricTile label="Win Rate" value="30%" subtitle="Industry: 22%" icon={Award} />
+                          </div>
+                        ) : docSection.content === 'TARGET_PERSONAS' ? (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h4 className="font-semibold text-blue-900 mb-2">Large Law Firms (1K+ attorneys)</h4>
+                                <div className="text-sm text-blue-800 space-y-1">
+                                  <p><strong>Decision Makers:</strong> GCs, Legal Ops Directors</p>
+                                  <p><strong>Pain Points:</strong> Complex research, time constraints</p>
+                                  <p><strong>Value Drivers:</strong> Accuracy, efficiency, comprehensive coverage</p>
+                                </div>
+                              </div>
+                              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <h4 className="font-semibold text-green-900 mb-2">Mid-Size Law Firms (100-1K attorneys)</h4>
+                                <div className="text-sm text-green-800 space-y-1">
+                                  <p><strong>Decision Makers:</strong> Managing Partners, Practice Heads</p>
+                                  <p><strong>Pain Points:</strong> Cost management, resource optimization</p>
+                                  <p><strong>Value Drivers:</strong> ROI, competitive advantage</p>
+                                </div>
+                              </div>
+                              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                <h4 className="font-semibold text-purple-900 mb-2">Corporate Legal Departments</h4>
+                                <div className="text-sm text-purple-800 space-y-1">
+                                  <p><strong>Decision Makers:</strong> Chief Legal Officers, Legal Ops</p>
+                                  <p><strong>Pain Points:</strong> Regulatory compliance, risk management</p>
+                                  <p><strong>Value Drivers:</strong> Risk mitigation, cost control</p>
+                                </div>
+                              </div>
+                              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                <h4 className="font-semibold text-orange-900 mb-2">Solo & Small Firms (&lt;100 attorneys)</h4>
+                                <div className="text-sm text-orange-800 space-y-1">
+                                  <p><strong>Decision Makers:</strong> Solo practitioners, Partners</p>
+                                  <p><strong>Pain Points:</strong> Limited resources, time management</p>
+                                  <p><strong>Value Drivers:</strong> Ease of use, affordability</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : docSection.content === 'PIPELINE_FUNNEL' ? (
+                          <div className="space-y-6">
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+                              <h4 className="font-semibold text-slate-900 mb-4">Sales Funnel Model</h4>
+                              <div className="space-y-4">
+                                {[
+                                  { stage: 'Total Addressable Market', value: '$5.1B', conversion: '100%', color: 'bg-blue-500' },
+                                  { stage: 'Marketing Qualified Leads', value: '8,200', conversion: '42%', color: 'bg-green-500' },
+                                  { stage: 'Sales Qualified Leads', value: '3,444', conversion: '65%', color: 'bg-yellow-500' },
+                                  { stage: 'Opportunities Created', value: '2,238', conversion: '30%', color: 'bg-orange-500' },
+                                  { stage: 'Closed Won', value: '671', conversion: '100%', color: 'bg-purple-500' }
+                                ].map((stage, idx) => (
+                                  <div key={idx} className="flex items-center gap-4">
+                                    <div className={`w-4 h-4 rounded ${stage.color}`}></div>
+                                    <div className="flex-1">
+                                      <div className="flex justify-between items-center">
+                                        <span className="font-medium text-slate-900">{stage.stage}</span>
+                                        <span className="text-slate-700">{stage.value}</span>
+                                      </div>
+                                      <div className="text-xs text-slate-600">Conversion: {stage.conversion}</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ) : docSection.content === 'BUDGET_ALLOCATION' ? (
+                          <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+                                <h4 className="font-semibold text-slate-900 mb-4">Marketing Budget Breakdown</h4>
+                                <div className="space-y-3">
+                                  {[
+                                    { category: 'Digital Advertising', amount: '$1.2M', percentage: '41%', color: 'bg-blue-500' },
+                                    { category: 'Content & Creative', amount: '$580K', percentage: '20%', color: 'bg-green-500' },
+                                    { category: 'Events & Conferences', amount: '$435K', percentage: '15%', color: 'bg-purple-500' },
+                                    { category: 'Sales Enablement', amount: '$290K', percentage: '10%', color: 'bg-orange-500' },
+                                    { category: 'Marketing Technology', amount: '$260K', percentage: '9%', color: 'bg-yellow-500' },
+                                    { category: 'Research & Analytics', amount: '$145K', percentage: '5%', color: 'bg-pink-500' }
+                                  ].map((item, idx) => (
+                                    <div key={idx} className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-3 h-3 rounded ${item.color}`}></div>
+                                        <span className="text-sm font-medium text-slate-900">{item.category}</span>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="font-semibold text-slate-900">{item.amount}</div>
+                                        <div className="text-xs text-slate-600">{item.percentage}</div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+                                <h4 className="font-semibold text-slate-900 mb-4">Channel Investment</h4>
+                                <div className="space-y-3">
+                                  {[
+                                    { channel: 'Search (SEM/SEO)', investment: '$650K', roi: '4.2x', color: 'bg-emerald-500' },
+                                    { channel: 'LinkedIn Advertising', investment: '$380K', roi: '3.8x', color: 'bg-blue-600' },
+                                    { channel: 'Industry Publications', investment: '$220K', roi: '2.9x', color: 'bg-indigo-500' },
+                                    { channel: 'Webinars & Virtual Events', investment: '$180K', roi: '3.5x', color: 'bg-purple-600' },
+                                    { channel: 'Email Marketing', investment: '$85K', roi: '5.1x', color: 'bg-teal-500' },
+                                    { channel: 'Account-Based Marketing', investment: '$395K', roi: '6.2x', color: 'bg-red-500' }
+                                  ].map((item, idx) => (
+                                    <div key={idx} className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <div className={`w-3 h-3 rounded ${item.color}`}></div>
+                                        <span className="text-sm font-medium text-slate-900">{item.channel}</span>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="font-semibold text-slate-900">{item.investment}</div>
+                                        <div className="text-xs text-green-600">ROI: {item.roi}</div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : docSection.content === 'MARKET_OPPORTUNITY' ? (
+                          <div className="space-y-3">
+                            {[
+                              { segment: 'Solo & Small Law Firms (SLF)', tam: '$1.2B TAM', target: '$4.5M pipeline', firms: '45,000 firms' },
+                              { segment: 'Mid-Size Law Firms (MLF)', tam: '$1.8B TAM', target: '$8.2M pipeline', firms: '8,000 firms' },
+                              { segment: 'Global & Large Law Firms (GLLF)', tam: '$1.1B TAM', target: '$6.8M pipeline', firms: '500 firms' },
+                              { segment: 'Legal Professional Corps (LPC)', tam: '$600M TAM', target: '$3.1M pipeline', firms: 'Boutique practices' },
+                              { segment: 'Legal Professional Enterprises (LPE)', tam: '$300M TAM', target: '$2.2M pipeline', firms: 'Corporate legal depts' }
+                            ].map((seg, idx) => (
+                              <div key={idx} className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold text-slate-900 mb-1">{seg.segment}</h4>
+                                    <div className="text-sm text-slate-600">{seg.firms}</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm font-semibold text-slate-900">{seg.target}</div>
+                                    <div className="text-xs text-slate-600">{seg.tam}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : docSection.content.split('\n\n').map((paragraph, pIndex) => {
                           // Check if this is a segment identifier (first line like "Tax & Accounting Professionals")
                           const isSegmentId = pIndex === 0 &&
                             (paragraph.includes('Tax & Accounting Professionals') ||
@@ -377,7 +540,7 @@ export default function TRGTMInterface({
                                   Target Segment
                                 </div>
                                 <div className="text-base font-bold text-slate-900">
-                                  {paragraph}
+                                  {parseMarkdown(paragraph)}
                                 </div>
                               </div>
                             );
@@ -387,7 +550,7 @@ export default function TRGTMInterface({
                             return (
                               <div key={pIndex} className="mt-6 mb-3 first:mt-0">
                                 <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                                  {paragraph}
+                                  {parseMarkdown(paragraph)}
                                 </h4>
                               </div>
                             );
@@ -413,7 +576,7 @@ export default function TRGTMInterface({
                                       <div key={lIndex} className="flex items-start gap-3 mb-3">
                                         <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-slate-600 mt-2"></div>
                                         <p className="flex-1 text-gray-700 leading-relaxed">
-                                          {line.substring(1).trim()}
+                                          {parseMarkdown(line.substring(1).trim())}
                                         </p>
                                       </div>
                                     );
@@ -427,7 +590,7 @@ export default function TRGTMInterface({
                           return (
                             <div key={pIndex} className="my-4">
                               <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                                {paragraph}
+                                {parseMarkdown(paragraph)}
                               </p>
                             </div>
                           );
@@ -437,6 +600,65 @@ export default function TRGTMInterface({
                   </motion.div>
                 ))}
               </div>
+
+              {/* Funnel Performance Benchmarks */}
+              {propDocumentSections.length > 0 && (
+                <div className="mt-8 pt-6 border-t-2 border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                    Funnel Performance Benchmarks
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <MetricTile
+                      label="Lead Conversion"
+                      value="18.5%"
+                      subtitle="Industry: 14.2%"
+                      icon={TrendingUp}
+                    />
+                    <MetricTile
+                      label="MQL to SQL"
+                      value="42%"
+                      subtitle="Target: 40%"
+                      icon={Target}
+                    />
+                    <MetricTile
+                      label="SQL to Opportunity"
+                      value="65%"
+                      subtitle="Benchmark: 58%"
+                      icon={Award}
+                    />
+                    <MetricTile
+                      label="Opportunity to Win"
+                      value="30%"
+                      subtitle="Industry: 22%"
+                      icon={CheckCircle}
+                    />
+                    <MetricTile
+                      label="Average Deal Size"
+                      value="$125K"
+                      subtitle="vs $98K avg"
+                      icon={DollarSign}
+                    />
+                    <MetricTile
+                      label="Sales Cycle"
+                      value="127 days"
+                      subtitle="Target: 120 days"
+                      icon={Clock}
+                    />
+                    <MetricTile
+                      label="Customer LTV"
+                      value="$485K"
+                      subtitle="3-year avg"
+                      icon={Users}
+                    />
+                    <MetricTile
+                      label="CAC Payback"
+                      value="8.2 months"
+                      subtitle="Target: 12mo"
+                      icon={TrendingUp}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Insights and Alerts */}
               {(Object.keys(propVocInsights).length > 0 || Object.keys(propConflictAlerts).length > 0) && (
@@ -494,6 +716,27 @@ export default function TRGTMInterface({
                       No insights available for this section yet.
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              {propDocumentSections && propDocumentSections.length > 0 && (
+                <div className="mt-6 p-4 border-t border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Actions</h3>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => onActionClick('download-tr-gtm-report')}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      Download GTM Strategy Report
+                    </button>
+                    <button
+                      onClick={() => onActionClick('setup-tr-gtm-approval')}
+                      className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                    >
+                      Set Up Approval Workflow
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

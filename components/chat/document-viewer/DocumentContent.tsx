@@ -1,9 +1,36 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Edit3, Save, X } from 'lucide-react';
 import { DocumentContentProps, DocumentSection } from './types';
 
-export default function DocumentContent({ document }: DocumentContentProps) {
+export default function DocumentContent({ document, allowEditing = false, onDocumentUpdate }: DocumentContentProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editableDocument, setEditableDocument] = useState(document);
+  const handleSave = () => {
+    if (onDocumentUpdate) {
+      onDocumentUpdate(editableDocument);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditableDocument(document);
+    setIsEditing(false);
+  };
+
+  const handleSectionEdit = (sectionId: string, newContent: string) => {
+    setEditableDocument(prev => ({
+      ...prev,
+      content: prev.content.map(section =>
+        section.id === sectionId
+          ? { ...section, content: newContent }
+          : section
+      )
+    }));
+  };
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -69,14 +96,27 @@ export default function DocumentContent({ document }: DocumentContentProps) {
         </HeadingTag>
 
         <div className="content">
-          {section.content.includes('•') || section.content.includes('-') ? (
-            <ul className="list-none space-y-2 mb-6">
-              {formatContent(section.content)}
-            </ul>
-          ) : (
+          {isEditing ? (
             <div className="mb-6">
-              {formatContent(section.content)}
+              <textarea
+                value={section.content}
+                onChange={(e) => handleSectionEdit(section.id, e.target.value)}
+                className="w-full min-h-[150px] p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y font-mono text-sm"
+                placeholder="Edit section content..."
+              />
             </div>
+          ) : (
+            <>
+              {section.content.includes('•') || section.content.includes('-') ? (
+                <ul className="list-none space-y-2 mb-6">
+                  {formatContent(section.content)}
+                </ul>
+              ) : (
+                <div className="mb-6">
+                  {formatContent(section.content)}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -105,9 +145,42 @@ export default function DocumentContent({ document }: DocumentContentProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            {document.title}
-          </h1>
+          <div className="flex items-start justify-between mb-4">
+            <h1 className="text-4xl font-bold text-gray-900">
+              {editableDocument.title}
+            </h1>
+
+            {allowEditing && (
+              <div className="flex items-center space-x-2">
+                {isEditing ? (
+                  <>
+                    <button
+                      onClick={handleSave}
+                      className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <Save size={16} />
+                      <span>Save Changes</span>
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      <X size={16} />
+                      <span>Cancel</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <Edit3 size={16} />
+                    <span>Edit Document</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center space-x-6 text-sm text-gray-800">
             <div className="flex items-center space-x-2">
@@ -141,7 +214,7 @@ export default function DocumentContent({ document }: DocumentContentProps) {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          {document.content.map(section => renderSection(section))}
+          {editableDocument.content.map(section => renderSection(section))}
         </motion.main>
 
         {/* Document Footer */}
