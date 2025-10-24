@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { Sparkles, Home, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface ChatHeaderProps {
   onToggleOrchestration: () => void;
@@ -18,16 +19,21 @@ export default function ChatHeader({
       <div className="flex items-center justify-between h-16 px-6">
         {/* Left section - Logo */}
         <div className="flex items-center space-x-4">
-          <Link href="/" className="flex items-center space-x-3 group">
+          <Link href="/start" className="flex items-center space-x-3 group">
             <motion.div
-              className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl shadow-lg"
+              className="relative w-10 h-10"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Sparkles size={20} className="text-white" />
+              <Image
+                src="/logos/td-icon.png"
+                alt="TD Logo"
+                fill
+                className="object-contain"
+              />
             </motion.div>
             <div className="hidden sm:block">
-              <h1 className="text-xl font-bold text-black">
+              <h1 className="text-xl font-semibold text-black tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
                 Marketing Super Agent
               </h1>
             </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Zap,
@@ -35,7 +36,7 @@ import AudienceTargetingDetail from '../campaign-execution/AudienceTargetingDeta
 interface CampaignExecutionInterfaceProps {
   messages: Message[];
   isLoading: boolean;
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string, attachment?: File) => void;
   onActionClick: (actionLabel: string) => void;
 }
 
@@ -45,6 +46,7 @@ export default function CampaignExecutionInterface({
   onSendMessage,
   onActionClick
 }: CampaignExecutionInterfaceProps) {
+  const router = useRouter();
   const [currentPhase, setCurrentPhase] = useState<'initialization' | 'agent-selection' | 'workflow-building' | 'review' | 'activation' | 'audience-targeting'>('initialization');
   const [activeAgents, setActiveAgents] = useState<string[]>([]);
   const [connectedApplications, setConnectedApplications] = useState<string[]>([]);
@@ -223,6 +225,11 @@ export default function CampaignExecutionInterface({
     // Here you would save the configuration to your backend
     console.log('Saving configuration:', config);
     setSelectedDetailView(null);
+  };
+
+  const handleActivateCampaign = () => {
+    // Open journey builder page in a new tab
+    window.open('/journey-builder', '_blank');
   };
 
   // Pre-fill message when component loads
@@ -500,7 +507,7 @@ export default function CampaignExecutionInterface({
                     Hyper-Personalize Campaign
                   </button>
                   <button
-                    onClick={() => setCurrentPhase('activation')}
+                    onClick={handleActivateCampaign}
                     className="w-full px-4 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <Play size={16} />
@@ -533,7 +540,7 @@ export default function CampaignExecutionInterface({
                     Finalize in Journey Builder
                   </button>
                   <button
-                    onClick={() => setCurrentPhase('activation')}
+                    onClick={handleActivateCampaign}
                     className="w-full px-4 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-md hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <Play size={16} />
@@ -563,6 +570,7 @@ export default function CampaignExecutionInterface({
             placeholder="Upload campaign brief or ask questions..."
             disabled={isLoading}
             initialValue={preFilledMessage}
+            allowAttachments={true}
           />
         </div>
       </div>

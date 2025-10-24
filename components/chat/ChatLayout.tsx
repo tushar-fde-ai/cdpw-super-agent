@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { jsPDF } from 'jspdf';
 import ChatHeader from './ChatHeader';
 import ConversationArea from './ConversationArea';
 import CompetitiveResearchInterface from './CompetitiveResearchInterface';
@@ -271,11 +272,16 @@ export default function ChatLayout() {
   };
 
   // Handle sending new messages
-  const handleSendMessage = useCallback(async (content: string) => {
+  const handleSendMessage = useCallback(async (content: string, attachment?: File) => {
+    // If there's an attachment, show it in the user message
+    const messageContent = attachment
+      ? `${content}\n\n📎 Attached: ${attachment.name}`
+      : content;
+
     const userMessage: Message = {
       id: generateMessageId(),
       type: 'user-text',
-      content,
+      content: messageContent,
       sender: 'user',
       timestamp: new Date()
     };
@@ -433,10 +439,14 @@ export default function ChatLayout() {
 
           setMessages(prev => [...prev, audienceMessage]);
         } else if (content.toLowerCase().includes('build me a campaign') || content.toLowerCase().includes('create campaign')) {
+          const executionContent = attachment
+            ? `Perfect! I've received your campaign brief (${attachment.name}) and I'm now analyzing it. I'm assembling the optimal agent team to create your campaign from this brief. Let me identify the specialized agents and applications we'll need.`
+            : 'Perfect! I\'ve analyzed your request and I\'m now assembling the optimal agent team to create your campaign from the brief. Let me identify the specialized agents and applications we\'ll need.';
+
           const executionMessage: Message = {
             id: generateMessageId(),
             type: 'assistant-text',
-            content: 'Perfect! I\'ve analyzed your request and I\'m now assembling the optimal agent team to create your campaign from the brief. Let me identify the specialized agents and applications we\'ll need.',
+            content: executionContent,
             sender: 'assistant',
             timestamp: new Date(),
             metadata: {
@@ -1468,7 +1478,7 @@ export default function ChatLayout() {
         break;
 
       case 'Download PDF':
-        // Download the campaign brief as HTML document
+        // Download the campaign brief as PDF document
         console.log('Downloading campaign brief with budget:', campaignBudget);
 
         // Calculate budget allocation based on selected budget
@@ -1478,170 +1488,176 @@ export default function ChatLayout() {
         const influencerBudget = (totalBudget * 0.2).toFixed(0);
         const creativeBudget = (totalBudget * 0.1).toFixed(0);
 
-        // Create the campaign brief content
-        const campaignBriefContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Halloween 2025 Campaign Brief</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; }
-    h1 { color: #7c3aed; border-bottom: 3px solid #7c3aed; padding-bottom: 10px; }
-    h2 { color: #4a5568; margin-top: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
-    h3 { color: #2d3748; margin-top: 20px; }
-    .section { margin-bottom: 30px; }
-    .metric { background: #f7fafc; padding: 15px; margin: 10px 0; border-left: 4px solid #7c3aed; }
-    ul { line-height: 1.8; }
-    .budget-item { padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
-    .highlight { background: #fef3c7; padding: 2px 5px; }
-  </style>
-</head>
-<body>
-  <h1>Halloween 2025 Campaign Brief</h1>
+        // Create PDF using jsPDF
+        const campaignPdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
 
-  <div class="section">
-    <h2>Campaign Overview</h2>
-    <p><strong>Campaign Name:</strong> Halloween Magic 2025</p>
-    <p><strong>Launch Date:</strong> Two weeks before Halloween (October 17, 2025)</p>
-    <p><strong>Campaign Duration:</strong> 2 weeks</p>
-    <p><strong>Primary Objective:</strong> Drive sales and engagement through Halloween-themed promotions</p>
-  </div>
+        const pdfPageWidth = campaignPdf.internal.pageSize.getWidth();
+        const pdfPageHeight = campaignPdf.internal.pageSize.getHeight();
+        const pdfMargin = 20;
+        const pdfMaxWidth = pdfPageWidth - (pdfMargin * 2);
+        let pdfYPosition = pdfMargin;
 
-  <div class="section">
-    <h2>Budget Allocation</h2>
-    <div class="budget-item"><strong>Email Marketing:</strong> $${Number(emailBudget).toLocaleString()} (30%)</div>
-    <div class="budget-item"><strong>Social Media Ads:</strong> $${Number(socialBudget).toLocaleString()} (40%)</div>
-    <div class="budget-item"><strong>Influencer Partnerships:</strong> $${Number(influencerBudget).toLocaleString()} (20%)</div>
-    <div class="budget-item"><strong>Creative & Design:</strong> $${Number(creativeBudget).toLocaleString()} (10%)</div>
-    <div class="budget-item"><strong>Total Budget:</strong> $${Number(totalBudget).toLocaleString()}</div>
-  </div>
+        // Helper function for adding text with wrapping
+        const addPdfText = (text: string, fontSize: number, isBold: boolean = false, color: number[] = [0, 0, 0]) => {
+          campaignPdf.setFontSize(fontSize);
+          campaignPdf.setFont('helvetica', isBold ? 'bold' : 'normal');
+          campaignPdf.setTextColor(color[0], color[1], color[2]);
 
-  <div class="section">
-    <h2>Target Audience Analysis</h2>
+          const lines = campaignPdf.splitTextToSize(text, pdfMaxWidth);
+          lines.forEach((line: string) => {
+            if (pdfYPosition > pdfPageHeight - pdfMargin) {
+              campaignPdf.addPage();
+              pdfYPosition = pdfMargin;
+            }
+            campaignPdf.text(line, pdfMargin, pdfYPosition);
+            pdfYPosition += fontSize * 0.5;
+          });
+        };
 
-    <h3>Primary Segment: Millennials (Ages 25-40)</h3>
-    <div class="metric">
-      <strong>Demographics:</strong>
-      <ul>
-        <li>Age: 25-40 years old</li>
-        <li>Income: $45,000 - $85,000</li>
-        <li>Urban/Suburban locations</li>
-        <li>Family-oriented with young children</li>
-      </ul>
-    </div>
+        // Title
+        addPdfText('Halloween 2025 Campaign Brief', 18, true, [124, 58, 237]);
+        pdfYPosition += 5;
+        campaignPdf.setDrawColor(124, 58, 237);
+        campaignPdf.setLineWidth(0.5);
+        campaignPdf.line(pdfMargin, pdfYPosition, pdfPageWidth - pdfMargin, pdfYPosition);
+        pdfYPosition += 10;
 
-    <div class="metric">
-      <strong>Psychographics:</strong>
-      <ul>
-        <li>Value experiences and creating memories</li>
-        <li>Active on social media (Instagram, Facebook, TikTok)</li>
-        <li>Enjoy seasonal celebrations and traditions</li>
-        <li>Price-conscious but willing to spend on quality</li>
-      </ul>
-    </div>
+        // Campaign Overview
+        addPdfText('Campaign Overview', 14, true, [74, 85, 104]);
+        pdfYPosition += 3;
+        campaignPdf.setDrawColor(226, 232, 240);
+        campaignPdf.setLineWidth(0.3);
+        campaignPdf.line(pdfMargin, pdfYPosition, pdfPageWidth - pdfMargin, pdfYPosition);
+        pdfYPosition += 5;
+        addPdfText('Campaign Name: Halloween Magic 2025', 10);
+        addPdfText('Launch Date: Two weeks before Halloween (October 17, 2025)', 10);
+        addPdfText('Campaign Duration: 2 weeks', 10);
+        addPdfText('Primary Objective: Drive sales and engagement through Halloween-themed promotions', 10);
+        pdfYPosition += 8;
 
-    <div class="metric">
-      <strong>Shopping Behaviors:</strong>
-      <ul>
-        <li>Plan Halloween purchases 2-3 weeks in advance</li>
-        <li>Prefer online shopping with quick delivery</li>
-        <li>Influenced by social media trends and recommendations</li>
-        <li>Average order value: $75-150</li>
-      </ul>
-    </div>
-  </div>
+        // Budget Allocation
+        addPdfText('Budget Allocation', 14, true, [74, 85, 104]);
+        pdfYPosition += 3;
+        campaignPdf.line(pdfMargin, pdfYPosition, pdfPageWidth - pdfMargin, pdfYPosition);
+        pdfYPosition += 5;
+        addPdfText(`Email Marketing: $${Number(emailBudget).toLocaleString()} (30%)`, 10);
+        addPdfText(`Social Media Ads: $${Number(socialBudget).toLocaleString()} (40%)`, 10);
+        addPdfText(`Influencer Partnerships: $${Number(influencerBudget).toLocaleString()} (20%)`, 10);
+        addPdfText(`Creative & Design: $${Number(creativeBudget).toLocaleString()} (10%)`, 10);
+        addPdfText(`Total Budget: $${Number(totalBudget).toLocaleString()}`, 10, true);
+        pdfYPosition += 8;
 
-  <div class="section">
-    <h2>Campaign Objectives</h2>
-    <ul>
-      <li>Increase Halloween season sales by <span class="highlight">35%</span> compared to 2024</li>
-      <li>Achieve email open rate of <span class="highlight">32%+</span></li>
-      <li>Generate <span class="highlight">10,000+</span> social media engagements</li>
-      <li>Acquire <span class="highlight">2,500+</span> new customers</li>
-      <li>Maintain customer satisfaction score above <span class="highlight">4.5/5</span></li>
-    </ul>
-  </div>
+        // Target Audience Analysis
+        addPdfText('Target Audience Analysis', 14, true, [74, 85, 104]);
+        pdfYPosition += 3;
+        campaignPdf.line(pdfMargin, pdfYPosition, pdfPageWidth - pdfMargin, pdfYPosition);
+        pdfYPosition += 5;
+        addPdfText('Primary Segment: Millennials (Ages 25-40)', 12, true);
+        pdfYPosition += 2;
+        addPdfText('Demographics:', 11, true);
+        addPdfText('• Age: 25-40 years old', 10);
+        addPdfText('• Income: $45,000 - $85,000', 10);
+        addPdfText('• Urban/Suburban locations', 10);
+        addPdfText('• Family-oriented with young children', 10);
+        pdfYPosition += 3;
+        addPdfText('Psychographics:', 11, true);
+        addPdfText('• Value experiences and creating memories', 10);
+        addPdfText('• Active on social media (Instagram, Facebook, TikTok)', 10);
+        addPdfText('• Enjoy seasonal celebrations and traditions', 10);
+        addPdfText('• Price-conscious but willing to spend on quality', 10);
+        pdfYPosition += 3;
+        addPdfText('Shopping Behaviors:', 11, true);
+        addPdfText('• Plan Halloween purchases 2-3 weeks in advance', 10);
+        addPdfText('• Prefer online shopping with quick delivery', 10);
+        addPdfText('• Influenced by social media trends and recommendations', 10);
+        addPdfText('• Average order value: $75-150', 10);
+        pdfYPosition += 8;
 
-  <div class="section">
-    <h2>Recommended Tactics</h2>
+        // Campaign Objectives
+        addPdfText('Campaign Objectives', 14, true, [74, 85, 104]);
+        pdfYPosition += 3;
+        campaignPdf.line(pdfMargin, pdfYPosition, pdfPageWidth - pdfMargin, pdfYPosition);
+        pdfYPosition += 5;
+        addPdfText('• Increase Halloween season sales by 35% compared to 2024', 10);
+        addPdfText('• Achieve email open rate of 32%+', 10);
+        addPdfText('• Generate 10,000+ social media engagements', 10);
+        addPdfText('• Acquire 2,500+ new customers', 10);
+        addPdfText('• Maintain customer satisfaction score above 4.5/5', 10);
+        pdfYPosition += 8;
 
-    <h3>Email Marketing</h3>
-    <ul>
-      <li><strong>Subject Line:</strong> "Unlock Halloween Magic - 30% Off Inside!"</li>
-      <li>3-email sequence: Teaser, Main Offer, Last Chance</li>
-      <li>Personalized product recommendations based on browsing history</li>
-      <li>Mobile-optimized design with Halloween theme</li>
-    </ul>
+        // Recommended Tactics
+        addPdfText('Recommended Tactics', 14, true, [74, 85, 104]);
+        pdfYPosition += 3;
+        campaignPdf.line(pdfMargin, pdfYPosition, pdfPageWidth - pdfMargin, pdfYPosition);
+        pdfYPosition += 5;
+        addPdfText('Email Marketing', 12, true);
+        addPdfText('• Subject Line: "Unlock Halloween Magic - 30% Off Inside!"', 10);
+        addPdfText('• 3-email sequence: Teaser, Main Offer, Last Chance', 10);
+        addPdfText('• Personalized product recommendations based on browsing history', 10);
+        addPdfText('• Mobile-optimized design with Halloween theme', 10);
+        pdfYPosition += 3;
+        addPdfText('Social Media Strategy', 12, true);
+        addPdfText('• Daily Halloween countdown posts (Instagram & TikTok)', 10);
+        addPdfText('• User-generated content campaign with hashtag #HalloweenMagic2025', 10);
+        addPdfText('• Instagram Stories with interactive polls and quizzes', 10);
+        addPdfText('• Influencer partnerships featuring product styling ideas', 10);
+        pdfYPosition += 3;
+        addPdfText('Promotional Offers', 12, true);
+        addPdfText('• 30% off Halloween-themed products', 10);
+        addPdfText('• Bundle deals: Buy 2, Get 1 Free on select items', 10);
+        addPdfText('• Free shipping on orders over $50', 10);
+        addPdfText('• Early bird special: Extra 10% off for first 48 hours', 10);
+        pdfYPosition += 8;
 
-    <h3>Social Media Strategy</h3>
-    <ul>
-      <li>Daily Halloween countdown posts (Instagram & TikTok)</li>
-      <li>User-generated content campaign with hashtag #HalloweenMagic2025</li>
-      <li>Instagram Stories with interactive polls and quizzes</li>
-      <li>Influencer partnerships featuring product styling ideas</li>
-    </ul>
+        // Key Performance Indicators
+        addPdfText('Key Performance Indicators (KPIs)', 14, true, [74, 85, 104]);
+        pdfYPosition += 3;
+        campaignPdf.line(pdfMargin, pdfYPosition, pdfPageWidth - pdfMargin, pdfYPosition);
+        pdfYPosition += 5;
+        addPdfText('• Email Open Rate: Target 32%+', 10);
+        addPdfText('• Click-Through Rate: Target 4.5%+', 10);
+        addPdfText('• Conversion Rate: Target 3.2%+', 10);
+        addPdfText('• Social Media Engagement: 10,000+ interactions', 10);
+        addPdfText('• Revenue: $175,000+ from campaign', 10);
+        addPdfText('• ROI: 3.5x minimum', 10);
+        pdfYPosition += 8;
 
-    <h3>Promotional Offers</h3>
-    <ul>
-      <li>30% off Halloween-themed products</li>
-      <li>Bundle deals: Buy 2, Get 1 Free on select items</li>
-      <li>Free shipping on orders over $50</li>
-      <li>Early bird special: Extra 10% off for first 48 hours</li>
-    </ul>
-  </div>
+        // Timeline & Milestones
+        addPdfText('Timeline & Milestones', 14, true, [74, 85, 104]);
+        pdfYPosition += 3;
+        campaignPdf.line(pdfMargin, pdfYPosition, pdfPageWidth - pdfMargin, pdfYPosition);
+        pdfYPosition += 5;
+        addPdfText('• Week 1 (Oct 17-23): Campaign launch, initial email blast, social media kickoff', 10);
+        addPdfText('• Week 2 (Oct 24-30): Reminder emails, intensified social ads, final push', 10);
+        addPdfText('• Halloween Day (Oct 31): Last chance emails, flash sale announcements', 10);
+        addPdfText('• Post-Campaign (Nov 1-7): Thank you emails, feedback collection, performance analysis', 10);
+        pdfYPosition += 8;
 
-  <div class="section">
-    <h2>Key Performance Indicators (KPIs)</h2>
-    <div class="metric">
-      <ul>
-        <li>Email Open Rate: Target 32%+</li>
-        <li>Click-Through Rate: Target 4.5%+</li>
-        <li>Conversion Rate: Target 3.2%+</li>
-        <li>Social Media Engagement: 10,000+ interactions</li>
-        <li>Revenue: $175,000+ from campaign</li>
-        <li>ROI: 3.5x minimum</li>
-      </ul>
-    </div>
-  </div>
+        // Footer
+        if (pdfYPosition > pdfPageHeight - pdfMargin - 20) {
+          campaignPdf.addPage();
+          pdfYPosition = pdfMargin;
+        }
+        pdfYPosition += 5;
+        campaignPdf.setDrawColor(226, 232, 240);
+        campaignPdf.setLineWidth(0.3);
+        campaignPdf.line(pdfMargin, pdfYPosition, pdfPageWidth - pdfMargin, pdfYPosition);
+        pdfYPosition += 5;
+        const pdfFooterText = `Document Generated: ${new Date().toLocaleDateString()} | Campaign Strategy Agent | Marketing Super Agent Platform`;
+        addPdfText(pdfFooterText, 8, false, [113, 128, 150]);
 
-  <div class="section">
-    <h2>Timeline & Milestones</h2>
-    <ul>
-      <li><strong>Week 1 (Oct 17-23):</strong> Campaign launch, initial email blast, social media kickoff</li>
-      <li><strong>Week 2 (Oct 24-30):</strong> Reminder emails, intensified social ads, final push</li>
-      <li><strong>Halloween Day (Oct 31):</strong> Last chance emails, flash sale announcements</li>
-      <li><strong>Post-Campaign (Nov 1-7):</strong> Thank you emails, feedback collection, performance analysis</li>
-    </ul>
-  </div>
+        // Save the PDF
+        campaignPdf.save('Halloween_2025_Campaign_Brief.pdf');
 
-  <div class="section">
-    <p style="color: #718096; font-size: 14px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-      <strong>Document Generated:</strong> ${new Date().toLocaleDateString()} |
-      <strong>Campaign Strategy Agent</strong> |
-      Marketing Super Agent Platform
-    </p>
-  </div>
-</body>
-</html>
-        `;
-
-        // Create blob and download
-        const blob = new Blob([campaignBriefContent], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const downloadLink = document.createElement('a');
-        downloadLink.href = url;
-        downloadLink.download = 'Halloween_2025_Campaign_Brief.html';
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(url);
-
-        // Show a confirmation message
+        // Show confirmation message
         const downloadConfirmation: Message = {
           id: `download-confirmation-${Date.now()}`,
           type: 'assistant-text',
-          content: 'Campaign brief downloaded successfully! You can open the HTML file in any browser or convert it to PDF.',
+          content: 'Campaign brief downloaded successfully as PDF!',
           sender: 'assistant',
           timestamp: new Date(),
           metadata: {
