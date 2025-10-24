@@ -239,7 +239,7 @@ export default function StartPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
         >
           <h2 className="text-3xl font-semibold text-black mb-2 flex items-center justify-center gap-3 tracking-tight" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
-            Hey Kate! Let&apos;s launch something amazing
+            Let&apos;s launch something amazing
             <Rocket className="w-8 h-8 text-slate-700" />
           </h2>
           <p className="text-gray-600 text-base" style={{ fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
