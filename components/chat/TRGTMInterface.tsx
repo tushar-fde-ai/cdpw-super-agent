@@ -16,11 +16,12 @@ import MessageInput from './MessageInput';
 interface TRGTMInterfaceProps {
   messages: Message[];
   isLoading: boolean;
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string, attachment?: File) => void;
   onActionClick: (actionLabel: string) => void;
   documentSections?: Array<{id: number, title: string, content: string}>;
   vocInsights?: Record<number, string[]>;
   conflictAlerts?: Record<number, string[]>;
+  uploadedDocument?: { name: string; size: number };
 }
 
 export default function TRGTMInterface({
@@ -30,7 +31,8 @@ export default function TRGTMInterface({
   onActionClick,
   documentSections: propDocumentSections = [],
   vocInsights: propVocInsights = {},
-  conflictAlerts: propConflictAlerts = {}
+  conflictAlerts: propConflictAlerts = {},
+  uploadedDocument
 }: TRGTMInterfaceProps) {
   const [currentSection, setCurrentSection] = useState<number>(0);
   const [completedSections, setCompletedSections] = useState<number[]>([]);
@@ -230,10 +232,25 @@ export default function TRGTMInterface({
 
         {/* Message Input */}
         <div className="border-t border-gray-200 bg-white p-4">
+          {uploadedDocument && (
+            <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 text-sm">
+                <FileText className="w-4 h-4 text-blue-600" />
+                <div className="flex-1">
+                  <p className="font-medium text-blue-900">{uploadedDocument.name}</p>
+                  <p className="text-xs text-blue-700">
+                    {(uploadedDocument.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              </div>
+            </div>
+          )}
           <MessageInput
             onSendMessage={onSendMessage}
             isLoading={isLoading}
             placeholder="Type your response or click a suggested answer..."
+            allowAttachments={!uploadedDocument}
           />
         </div>
       </div>

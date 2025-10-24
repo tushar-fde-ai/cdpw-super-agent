@@ -212,6 +212,7 @@ export default function ChatLayout() {
   const [trGTMDocumentSections, setTRGTMDocumentSections] = useState<Array<{id: number, title: string, content: string}>>([]);
   const [trGTMVOCInsights, setTRGTMVOCInsights] = useState<Record<number, string[]>>({});
   const [trGTMConflictAlerts, setTRGTMConflictAlerts] = useState<Record<number, string[]>>({});
+  const [gtmUploadedDocument, setGtmUploadedDocument] = useState<{ name: string; size: number } | undefined>(undefined);
   const processedMessageIds = useRef<Set<string>>(new Set());
   const processedParams = useRef<Set<string>>(new Set());
 
@@ -476,6 +477,49 @@ export default function ChatLayout() {
     } else if (isTRGTMMode) {
       // Handle TR GTM Strategy responses
       setIsLoading(true);
+
+      // Handle document upload
+      if (attachment) {
+        setGtmUploadedDocument({
+          name: attachment.name,
+          size: attachment.size
+        });
+
+        setTimeout(() => {
+          const uploadAckMessage: Message = {
+            id: generateMessageId(),
+            type: 'assistant-text',
+            content: `Perfect! I've received your GTM strategy document (${attachment.name}). I'm analyzing the content to understand your current strategy and identify opportunities.\n\nBased on this document, I'll help you refine and expand your GTM strategy across all key sections. Would you like to start with:\n\n• Strategic Definition - Review and refine business objectives\n• Financial Targets - Update pipeline and revenue goals\n• Competitive Intelligence - Analyze market landscape and competitors`,
+            sender: 'assistant',
+            timestamp: new Date(),
+            metadata: {
+              agentName: 'Campaign Strategy Agent',
+              agentColor: '#475569',
+              actions: [
+                {
+                  label: '1. Strategic Definition',
+                  variant: 'primary' as const,
+                  action: 'tr-gtm-section-1'
+                },
+                {
+                  label: '2. Financial Targets',
+                  variant: 'outline' as const,
+                  action: 'tr-gtm-section-2'
+                },
+                {
+                  label: 'Competitive Intelligence',
+                  variant: 'secondary' as const,
+                  action: 'gtm-competitive-intelligence'
+                }
+              ]
+            }
+          };
+
+          setMessages(prev => [...prev, uploadAckMessage]);
+          setIsLoading(false);
+        }, 2000);
+        return;
+      }
 
       setTimeout(() => {
         // Check if this is a Section 1 answer
@@ -997,6 +1041,28 @@ export default function ChatLayout() {
 
       // Clear URL parameters after processing
       router.replace('/chat');
+    } else if (modeParam === 'gtm-competitive') {
+      // Handle GTM competitive intelligence mode
+      processedParams.current.add(paramKey);
+      setIsCompetitiveMode(true);
+
+      // Initialize GTM competitive intelligence messages
+      const gtmCompetitiveIntroMessage: Message = {
+        id: 'gtm-competitive-intro',
+        type: 'assistant-text',
+        content: 'Welcome to GTM Competitive Intelligence Research for Thomson Reuters! I\'ve activated specialized research agents to help you analyze competitive landscape, market positioning, and strategic opportunities for your enterprise go-to-market strategy.\n\nWhat aspects of competitive intelligence would you like to explore?',
+        sender: 'assistant',
+        timestamp: new Date(),
+        metadata: {
+          agentName: 'Deep Research Agent',
+          agentColor: '#8b5cf6'
+        }
+      };
+
+      setMessages([gtmCompetitiveIntroMessage]);
+
+      // Clear URL parameters after processing
+      router.replace('/chat');
     } else if (modeParam === 'tr-gtm') {
       // Handle TR GTM Strategy mode
       processedParams.current.add(paramKey);
@@ -1006,7 +1072,7 @@ export default function ChatLayout() {
       const trGTMIntroMessage: Message = {
         id: 'tr-gtm-intro',
         type: 'assistant-text',
-        content: 'Welcome to Thomson Reuters GTM Strategy Planning! I\'m your Campaign Strategy Agent, here to help you create a comprehensive Go-to-Market strategy for your B2B enterprise campaign.\n\nWe\'ll build your strategy in two key sections: Strategic Definition and Financial Targets. As we complete each section, your GTM strategy document will appear on the right.\n\nWhat would you like to work on today?',
+        content: 'Welcome to Thomson Reuters GTM Strategy Planning! I\'m your Campaign Strategy Agent, here to help you create a comprehensive Go-to-Market strategy for your B2B enterprise campaign.\n\nYou can upload an existing GTM strategy document (PDF) to use as a foundation, or we can build one from scratch. We\'ll work through sections covering Strategic Definition, Financial Targets, GTM Strategy, Products & Market, Audience, Messaging, Metrics, Pipeline, Competitive Analysis, and Approvals.\n\nAs we complete each section, your GTM strategy document will appear on the right.\n\nWhat would you like to work on today?',
         sender: 'assistant',
         timestamp: new Date(),
         metadata: {
@@ -1022,6 +1088,11 @@ export default function ChatLayout() {
               label: '2. Financial Targets',
               variant: 'outline' as const,
               action: 'tr-gtm-section-2'
+            },
+            {
+              label: 'Competitive Intelligence',
+              variant: 'secondary' as const,
+              action: 'gtm-competitive-intelligence'
             }
           ]
         }
@@ -1918,6 +1989,12 @@ export default function ChatLayout() {
         break;
       }
 
+      case 'gtm-competitive-intelligence':
+        // Navigate to competitive intelligence mode for GTM
+        console.log('Opening GTM competitive intelligence');
+        router.push('/chat?mode=gtm-competitive');
+        break;
+
       default:
         // Handle TR GTM section actions
         if (actionLabel.startsWith('tr-gtm-section-')) {
@@ -2053,6 +2130,7 @@ export default function ChatLayout() {
             documentSections={trGTMDocumentSections}
             vocInsights={trGTMVOCInsights}
             conflictAlerts={trGTMConflictAlerts}
+            uploadedDocument={gtmUploadedDocument}
           />
         ) : (
           /* Conversation Area - Full Width, Scrollable */
